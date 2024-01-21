@@ -1,10 +1,40 @@
 name: book
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+
 on:
   push:
     branches:
       - main
 
 jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # To push a branch 
+      pull-requests: write  # To create a PR from that branch
+    steps:
+    - uses: actions/checkout@master
+    - name: Install Rust
+      run: |
+        rustup set profile minimal
+        rustup toolchain install stable
+        rustup default stable
+    - name: Install latest mdbook
+      run: |
+        tag=$(curl 'https://api.github.com/repos/rust-lang/mdbook/releases/latest' | jq -r '.tag_name')
+        url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-gnu.tar.gz"
+        mkdir bin
+        curl -sSL $url | tar -xz --directory=bin
+        echo "$(pwd)/bin" >> $GITHUB_PATH
+    - name: Run tests
+      run: |
+        cd mdbook
+        mdbook test
+
   deploy:
     runs-on: ubuntu-latest
     permissions:
@@ -19,22 +49,22 @@ jobs:
         run: |
           tag=$(curl 'https://api.github.com/repos/rust-lang/mdbook/releases/latest' | jq -r '.tag_name')
           url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-gnu.tar.gz"
-          mkdir mdbook-build
+          mkdir mdbook-build # Create a directory to extract the binary to
           curl -sSL $url | tar -xz --directory=./mdbook-build
           echo `pwd`/mdbook-build >> $GITHUB_PATH
       - name: Build Book
         run: |
           # This assumes your book is in the root of your repository.
           # Just add a `cd` here if you need to change to another directory.
-          cd mdbook
-          mdbook build
+          cd mdbook # Change to the directory where your book.toml is
+          mdbook build # Build the book
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
           # Upload entire repository
-          path: 'mdbook/book'
+          path: 'mdbook/book' # Change this to the directory where your book is built
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1
