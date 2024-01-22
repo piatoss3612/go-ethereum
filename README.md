@@ -16,6 +16,6 @@
 
 - 이 프로젝트는 Go Ethereum의 주석을 한글로 번역하면서 Ethereum의 핵심 개념과 동작 원리를 이해하기 위한 프로젝트입니다.
 
-## mdBook을 이용한 문서화
+## mdBook
 
-- https://piatoss3612.github.io/go-ethereum-breakdown/
+- [link](https://piatoss3612.github.io/go-ethereum-breakdown/)

@@ -131,9 +131,6 @@ func init() {
 	}
 }
 
-// DecodeBig decodes a hex string with 0x prefix as a quantity.
-// Numbers larger than 256 bits are not accepted.
-
 // DecodeBig는 0x 접두사가 있는 16진수 문자열을 big.Int로 디코딩합니다.
 // 256비트보다 큰 숫자는 허용되지 않습니다.
 func DecodeBig(input string) (*big.Int, error) {
