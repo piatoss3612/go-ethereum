@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package compiler wraps the Solidity and Vyper compiler executables (solc; vyper).
+// compiler 패키지는 Solidity와 Vyper 컴파일러 실행 파일(solc; vyper)을 래핑합니다.
 package compiler
 
-// Contract contains information about a compiled contract, alongside its code and runtime code.
+// Contract는 코드 및 런타임 코드와 함께 컴파일된 컨트랙트에 대한 정보를 포함합니다.
 type Contract struct {
 	Code        string            `json:"code"`
 	RuntimeCode string            `json:"runtime-code"`
@@ -25,11 +25,10 @@ type Contract struct {
 	Hashes      map[string]string `json:"hashes"`
 }
 
-// ContractInfo contains information about a compiled contract, including access
-// to the ABI definition, source mapping, user and developer docs, and metadata.
+// ContractInfo는 컴파일된 컨트랙트에 대한 정보를 포함합니다.
+// 이 정보에는 ABI 정의, 소스 매핑, 사용자 및 개발자 문서, 메타데이터 등이 포함됩니다.
 //
-// Depending on the source, language version, compiler version, and compiler
-// options will provide information about how the contract was compiled.
+// 소스, 언어 버전, 컴파일러 버전 및 컴파일러 옵션에 따라 컨트랙트가 컴파일된 방식에 대한 정보를 제공합니다.
 type ContractInfo struct {
 	Source          string      `json:"source"`
 	Language        string      `json:"language"`

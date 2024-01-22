@@ -22,7 +22,7 @@ import (
 	"os"
 )
 
-// LoadJSON reads the given file and unmarshals its content.
+// LoadJSON은 주어진 파일을 읽고 해당 내용을 val로 변환합니다.
 func LoadJSON(file string, val interface{}) error {
 	content, err := os.ReadFile(file)
 	if err != nil {
@@ -38,7 +38,7 @@ func LoadJSON(file string, val interface{}) error {
 	return nil
 }
 
-// findLine returns the line number for the given offset into data.
+// findLine은 data의 주어진 오프셋이 몇 번째 줄인지 찾습니다.
 func findLine(data []byte, offset int64) (line int) {
 	line = 1
 	for i, r := range string(data) {

@@ -1,6 +1,6 @@
 [book]
 authors = ["piatoss"]
-language = "en"
+language = "ko"
 multilingual = false
 src = "src"
 title = "go-ethereum 박살내기"

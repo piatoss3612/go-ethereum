@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package math provides integer math utilities.
+// math 패키지는 정수 계산 도우미 함수를 제공합니다.
 package math
 
 import (
@@ -22,37 +22,36 @@ import (
 	"math/big"
 )
 
-// Various big integer limit values.
+// 큰 정수로 표현된 여러 가지 임계값
 var (
-	tt255     = BigPow(2, 255)
-	tt256     = BigPow(2, 256)
-	tt256m1   = new(big.Int).Sub(tt256, big.NewInt(1))
-	tt63      = BigPow(2, 63)
-	MaxBig256 = new(big.Int).Set(tt256m1)
-	MaxBig63  = new(big.Int).Sub(tt63, big.NewInt(1))
+	tt255     = BigPow(2, 255)                         // 2^255
+	tt256     = BigPow(2, 256)                         // 2^256
+	tt256m1   = new(big.Int).Sub(tt256, big.NewInt(1)) // 2^256 - 1
+	tt63      = BigPow(2, 63)                          // 2^63
+	MaxBig256 = new(big.Int).Set(tt256m1)              // 2^256 - 1
+	MaxBig63  = new(big.Int).Sub(tt63, big.NewInt(1))  // 2^63 - 1
 )
 
 const (
-	// number of bits in a big.Word
+	// big.Word의 비트 수 (64비트 아키텍처에서 64, 32비트 아키텍처에서 32)
 	wordBits = 32 << (uint64(^big.Word(0)) >> 63)
-	// number of bytes in a big.Word
+	// big.Word의 바이트 수 (64비트 아키텍처에서 8, 32비트 아키텍처에서 4)
 	wordBytes = wordBits / 8
 )
 
-// HexOrDecimal256 marshals big.Int as hex or decimal.
+// HexOrDecimal256은 big.Int를 16진수 또는 10진수로 변환합니다.
 type HexOrDecimal256 big.Int
 
-// NewHexOrDecimal256 creates a new HexOrDecimal256
+// NewHexOrDecimal256는 새로운 HexOrDecimal256을 생성합니다.
 func NewHexOrDecimal256(x int64) *HexOrDecimal256 {
 	b := big.NewInt(x)
 	h := HexOrDecimal256(*b)
 	return &h
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
+// UnmarshalJSON은 json.Unmarshaler를 구현합니다.
 //
-// It is similar to UnmarshalText, but allows parsing real decimals too, not just
-// quoted decimal strings.
+// UnmarshalText와 유사하지만 실제 10진수를 파싱할 수 있습니다. 따옴표로 묶인 10진수 문자열 뿐만 아니라 실제 10진수도 파싱할 수 있습니다.
 func (i *HexOrDecimal256) UnmarshalJSON(input []byte) error {
 	if len(input) > 0 && input[0] == '"' {
 		input = input[1 : len(input)-1]
@@ -60,7 +59,7 @@ func (i *HexOrDecimal256) UnmarshalJSON(input []byte) error {
 	return i.UnmarshalText(input)
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler.
+// UnmarshalText는 encoding.TextUnmarshaler를 구현합니다.
 func (i *HexOrDecimal256) UnmarshalText(input []byte) error {
 	bigint, ok := ParseBig256(string(input))
 	if !ok {
@@ -70,7 +69,7 @@ func (i *HexOrDecimal256) UnmarshalText(input []byte) error {
 	return nil
 }
 
-// MarshalText implements encoding.TextMarshaler.
+// MarshalText는 encoding.TextMarshaler를 구현합니다.
 func (i *HexOrDecimal256) MarshalText() ([]byte, error) {
 	if i == nil {
 		return []byte("0x0"), nil
@@ -78,18 +77,17 @@ func (i *HexOrDecimal256) MarshalText() ([]byte, error) {
 	return []byte(fmt.Sprintf("%#x", (*big.Int)(i))), nil
 }
 
-// Decimal256 unmarshals big.Int as a decimal string. When unmarshalling,
-// it however accepts either "0x"-prefixed (hex encoded) or non-prefixed (decimal)
+// Decimal256은 big.Int를 10진수 문자열로 변환하는데, "0x" 접두사가 붙은 16진수 문자열도 허용합니다.
 type Decimal256 big.Int
 
-// NewDecimal256 creates a new Decimal256
+// NewDecimal256은 새로운 Decimal256을 생성합니다.
 func NewDecimal256(x int64) *Decimal256 {
 	b := big.NewInt(x)
 	d := Decimal256(*b)
 	return &d
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler.
+// UnmarshalText는 encoding.TextUnmarshaler를 구현합니다.
 func (i *Decimal256) UnmarshalText(input []byte) error {
 	bigint, ok := ParseBig256(string(input))
 	if !ok {
@@ -99,12 +97,12 @@ func (i *Decimal256) UnmarshalText(input []byte) error {
 	return nil
 }
 
-// MarshalText implements encoding.TextMarshaler.
+// MarshalText는 encoding.TextMarshaler를 구현합니다.
 func (i *Decimal256) MarshalText() ([]byte, error) {
 	return []byte(i.String()), nil
 }
 
-// String implements Stringer.
+// String은 Stringer를 구현합니다.
 func (i *Decimal256) String() string {
 	if i == nil {
 		return "0"
@@ -112,8 +110,8 @@ func (i *Decimal256) String() string {
 	return fmt.Sprintf("%#d", (*big.Int)(i))
 }
 
-// ParseBig256 parses s as a 256 bit integer in decimal or hexadecimal syntax.
-// Leading zeros are accepted. The empty string parses as zero.
+// ParseBig256는 10진수 또는 16진수 구문으로 s를 256비트 정수로 파싱합니다.
+// 앞에 0이 붙어있어도 상관없습니다. 빈 문자열은 0으로 파싱됩니다.
 func ParseBig256(s string) (*big.Int, bool) {
 	if s == "" {
 		return new(big.Int), true
@@ -131,7 +129,7 @@ func ParseBig256(s string) (*big.Int, bool) {
 	return bigint, ok
 }
 
-// MustParseBig256 parses s as a 256 bit big integer and panics if the string is invalid.
+// MustParseBig256는 s를 256비트 큰 정수로 파싱하고, 문자열이 유효하지 않으면 패닉을 발생시킵니다.
 func MustParseBig256(s string) *big.Int {
 	v, ok := ParseBig256(s)
 	if !ok {
@@ -140,13 +138,13 @@ func MustParseBig256(s string) *big.Int {
 	return v
 }
 
-// BigPow returns a ** b as a big integer.
+// BigPow는 a ** b를 큰 정수로 반환합니다.
 func BigPow(a, b int64) *big.Int {
 	r := big.NewInt(a)
 	return r.Exp(r, big.NewInt(b), nil)
 }
 
-// BigMax returns the larger of x or y.
+// BigMax는 x와 y 중 더 큰 값을 반환합니다.
 func BigMax(x, y *big.Int) *big.Int {
 	if x.Cmp(y) < 0 {
 		return y
@@ -154,7 +152,7 @@ func BigMax(x, y *big.Int) *big.Int {
 	return x
 }
 
-// BigMin returns the smaller of x or y.
+// BigMin은 x와 y 중 더 작은 값을 반환합니다.
 func BigMin(x, y *big.Int) *big.Int {
 	if x.Cmp(y) > 0 {
 		return y
@@ -162,7 +160,7 @@ func BigMin(x, y *big.Int) *big.Int {
 	return x
 }
 
-// FirstBitSet returns the index of the first 1 bit in v, counting from LSB.
+// FirstBitSet는 최하위 비트부터 시작하여 v의 첫 번째 1 비트의 인덱스를 반환합니다.
 func FirstBitSet(v *big.Int) int {
 	for i := 0; i < v.BitLen(); i++ {
 		if v.Bit(i) > 0 {
@@ -172,8 +170,7 @@ func FirstBitSet(v *big.Int) int {
 	return v.BitLen()
 }
 
-// PaddedBigBytes encodes a big integer as a big-endian byte slice. The length
-// of the slice is at least n bytes.
+// PaddedBigBytes는 큰 정수를 빅 엔디언 바이트 슬라이스로 인코딩합니다. 슬라이스의 길이는 최소 n바이트입니다.
 func PaddedBigBytes(bigint *big.Int, n int) []byte {
 	if bigint.BitLen()/8 >= n {
 		return bigint.Bytes()
@@ -183,27 +180,25 @@ func PaddedBigBytes(bigint *big.Int, n int) []byte {
 	return ret
 }
 
-// bigEndianByteAt returns the byte at position n,
-// in Big-Endian encoding
-// So n==0 returns the least significant byte
+// bigEndianByteAt는 빅 엔디언 인코딩에서 위치 n의 바이트를 반환합니다.
+// n==0일 경우 최하위 바이트를 반환합니다.
 func bigEndianByteAt(bigint *big.Int, n int) byte {
 	words := bigint.Bits()
-	// Check word-bucket the byte will reside in
+	// 바이트가 속할 word-bucket을 확인합니다.
 	i := n / wordBytes
 	if i >= len(words) {
 		return byte(0)
 	}
 	word := words[i]
-	// Offset of the byte
+	// 바이트의 오프셋
 	shift := 8 * uint(n%wordBytes)
 
 	return byte(word >> shift)
 }
 
-// Byte returns the byte at position n,
-// with the supplied padlength in Little-Endian encoding.
-// n==0 returns the MSB
-// Example: bigint '5', padlength 32, n=31 => 5
+// Byte는 리틀 엔디언에서 padlength가 될 때까지 패딩된 바이트열의 n번째 바이트를 반환합니다.
+// n==0인 경우 최상위 바이트를 반환합니다.
+// 예시: bigint '5', padlength 32, n=31 => 5
 func Byte(bigint *big.Int, padlength, n int) byte {
 	if n >= padlength {
 		return byte(0)
@@ -211,8 +206,8 @@ func Byte(bigint *big.Int, padlength, n int) byte {
 	return bigEndianByteAt(bigint, padlength-1-n)
 }
 
-// ReadBits encodes the absolute value of bigint as big-endian bytes. Callers must ensure
-// that buf has enough space. If buf is too short the result will be incomplete.
+// ReadBits는 bigint의 절대값을 빅 엔디언 바이트로 인코딩합니다. 호출자는 buf에 충분한 공간이 있는지 확인해야 합니다.
+// buf가 너무 짧으면 결과가 불완전할 수 있습니다.
 func ReadBits(bigint *big.Int, buf []byte) {
 	i := len(buf)
 	for _, d := range bigint.Bits() {
@@ -224,19 +219,18 @@ func ReadBits(bigint *big.Int, buf []byte) {
 	}
 }
 
-// U256 encodes as a 256 bit two's complement number. This operation is destructive.
+// U256은 큰 정수를 256비트 2의 보수 숫자로 인코딩합니다. 이 연산은 파괴적(원본값을 변경)입니다.
 func U256(x *big.Int) *big.Int {
 	return x.And(x, tt256m1)
 }
 
-// U256Bytes converts a big Int into a 256bit EVM number.
-// This operation is destructive.
+// U256Bytes는 큰 정수를 256비트 EVM 숫자로 인코딩합니다. 이 연산은 파괴적(원본값을 변경)입니다.
 func U256Bytes(n *big.Int) []byte {
 	return PaddedBigBytes(U256(n), 32)
 }
 
-// S256 interprets x as a two's complement number.
-// x must not exceed 256 bits (the result is undefined if it does) and is not modified.
+// S256은 2의 보수 x를 Signed 256비트 숫자로 인코딩합니다.
+// x는 256비트를 초과해서는 안됩니다(그렇게 되면 결과는 정의되지 않음). 이 연산은 파괴적(원본값을 변경)이지 않습니다.
 //
 //	S256(0)        = 0
 //	S256(1)        = 1
@@ -249,9 +243,8 @@ func S256(x *big.Int) *big.Int {
 	return new(big.Int).Sub(x, tt256)
 }
 
-// Exp implements exponentiation by squaring.
-// Exp returns a newly-allocated big integer and does not change
-// base or exponent. The result is truncated to 256 bits.
+// Exp는 제곱을 통한 지수 연산을 구현합니다.
+// Exp는 새로운 큰 정수를 반환하며, base 또는 exponent를 변경하지 않습니다. 결과는 256비트로 잘립니다.
 //
 // Courtesy @karalabe and @chfast
 func Exp(base, exponent *big.Int) *big.Int {

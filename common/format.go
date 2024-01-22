@@ -23,14 +23,12 @@ import (
 	"time"
 )
 
-// PrettyDuration is a pretty printed version of a time.Duration value that cuts
-// the unnecessary precision off from the formatted textual representation.
+// PrettyDuration은 time.Duration 값의 기간을 표시하는 문자열의 불필요한 정밀도를 잘라내어 예쁘게 표시합니다.
 type PrettyDuration time.Duration
 
-var prettyDurationRe = regexp.MustCompile(`\.[0-9]{4,}`)
+var prettyDurationRe = regexp.MustCompile(`\.[0-9]{4,}`) // 소수점 아래 4자리 이상의 숫자를 찾습니다.
 
-// String implements the Stringer interface, allowing pretty printing of duration
-// values rounded to three decimals.
+// String은 Stringer 인터페이스를 구현하며, 소수점 아래 3자리까지 반올림하여 기간 값을 예쁘게 표시합니다.
 func (d PrettyDuration) String() string {
 	label := time.Duration(d).String()
 	if match := prettyDurationRe.FindString(label); len(match) > 4 {
@@ -39,33 +37,31 @@ func (d PrettyDuration) String() string {
 	return label
 }
 
-// PrettyAge is a pretty printed version of a time.Duration value that rounds
-// the values up to a single most significant unit, days/weeks/years included.
+// PrettyAge는 time.Duration 값을 예쁘게 표시한 것으로, 값을 년/월/주를 포함한 하나의 최상위 단위(a single most significant unit)로 반올림합니다.
 type PrettyAge time.Time
 
-// ageUnits is a list of units the age pretty printing uses.
+// ageUnits는 나이를 예쁘게 표시하는 데 사용되는 단위 목록입니다.
 var ageUnits = []struct {
 	Size   time.Duration
 	Symbol string
 }{
-	{12 * 30 * 24 * time.Hour, "y"},
-	{30 * 24 * time.Hour, "mo"},
-	{7 * 24 * time.Hour, "w"},
-	{24 * time.Hour, "d"},
-	{time.Hour, "h"},
-	{time.Minute, "m"},
-	{time.Second, "s"},
+	{12 * 30 * 24 * time.Hour, "y"}, // year
+	{30 * 24 * time.Hour, "mo"},     // month
+	{7 * 24 * time.Hour, "w"},       // week
+	{24 * time.Hour, "d"},           // day
+	{time.Hour, "h"},                // hour
+	{time.Minute, "m"},              // minute
+	{time.Second, "s"},              // second
 }
 
-// String implements the Stringer interface, allowing pretty printing of duration
-// values rounded to the most significant time unit.
+// String은 Stringer 인터페이스를 구현하며, 최상위 시간 단위로 반올림된 기간 값을 예쁘게 표시합니다.
 func (t PrettyAge) String() string {
-	// Calculate the time difference and handle the 0 cornercase
+	// 현재 시간과의 차이를 계산하고 예외 상황인 0을 처리합니다.
 	diff := time.Since(time.Time(t))
 	if diff < time.Second {
 		return "0"
 	}
-	// Accumulate a precision of 3 components before returning
+	// 년/월/주를 포함한 하나의 최상위 단위로 반올림합니다. (prec은 년/월/주가 결과에 포함되었는지 여부를 추적합니다.)
 	result, prec := "", 0
 
 	for _, unit := range ageUnits {

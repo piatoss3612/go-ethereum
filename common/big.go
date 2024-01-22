@@ -18,7 +18,7 @@ package common
 
 import "math/big"
 
-// Common big integers often used
+// 자주 사용되는 공통된 큰 정수 값 정의
 var (
 	Big1   = big.NewInt(1)
 	Big2   = big.NewInt(2)

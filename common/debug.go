@@ -24,20 +24,29 @@ import (
 	"strings"
 )
 
-// Report gives off a warning requesting the user to submit an issue to the github tracker.
+// Report는 사용자가 github 트래커에 이슈를 제출하도록 요청하는 경고를 발생시킵니다.
 func Report(extra ...interface{}) {
 	fmt.Fprintln(os.Stderr, "You've encountered a sought after, hard to reproduce bug. Please report this to the developers <3 https://github.com/ethereum/go-ethereum/issues")
 	fmt.Fprintln(os.Stderr, extra...)
 
-	_, file, line, _ := runtime.Caller(1)
+	_, file, line, _ := runtime.Caller(1) // 이 함수를 호출한 함수의 파일명과 라인 번호를 반환합니다.
 	fmt.Fprintf(os.Stderr, "%v:%v\n", file, line)
 
-	debug.PrintStack()
+	debug.PrintStack() // 스택 트레이스를 표준 오류에 출력합니다.
 
 	fmt.Fprintln(os.Stderr, "#### BUG! PLEASE REPORT ####")
 }
 
-// PrintDeprecationWarning prints the given string in a box using fmt.Println.
+// PrintDeprecationWarning는 fmt.Println을 사용하여 주어진 문자열을 박스에 담아 출력합니다.
+/*
+	ex)
+
+	###############################
+	#                             #
+	# This function is deprecated #
+	#                             #
+	###############################
+*/
 func PrintDeprecationWarning(str string) {
 	line := strings.Repeat("#", len(str)+4)
 	emptyLine := strings.Repeat(" ", len(str))

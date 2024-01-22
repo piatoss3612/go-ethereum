@@ -15,18 +15,16 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 /*
-Package hexutil implements hex encoding with 0x prefix.
-This encoding is used by the Ethereum RPC API to transport binary data in JSON payloads.
+hexutil 패키지는 0x 접두사가 있는 16진수 인코딩을 구현합니다.
+hexutil 인코딩은 이더리움 RPC API에서 바이너리 데이터를 JSON 형식의 페이로드로 전송하는 데 사용됩니다.
 
-# Encoding Rules
+# 인코딩 규칙
 
-All hex data must have prefix "0x".
+모든 16진수 데이터는 "0x" 접두사를 가져야 합니다.
 
-For byte slices, the hex data must be of even length. An empty byte slice
-encodes as "0x".
+바이트 슬라이스의 경우 16진수 데이터는 짝수 길이여야 합니다. 빈 바이트 슬라이스는 "0x"로 인코딩됩니다.
 
-Integers are encoded using the least amount of digits (no leading zero digits). Their
-encoding may be of uneven length. The number zero encodes as "0x0".
+정수는 최소한의 숫자를 사용하여 인코딩됩니다.(앞에 0이 붙지 않은 숫자). 그들의 인코딩은 홀수 길이일 수 있습니다. 숫자 0은 "0x0"으로 인코딩됩니다.
 */
 package hexutil
 
@@ -37,7 +35,7 @@ import (
 	"strconv"
 )
 
-const uintBits = 32 << (uint64(^uint(0)) >> 63)
+const uintBits = 32 << (uint64(^uint(0)) >> 63) // 64
 
 // Errors
 var (
@@ -56,7 +54,7 @@ type decError struct{ msg string }
 
 func (err decError) Error() string { return err.msg }
 
-// Decode decodes a hex string with 0x prefix.
+// Decode는 0x 접두사가 있는 16진수 문자열을 바이트열로 디코딩합니다.
 func Decode(input string) ([]byte, error) {
 	if len(input) == 0 {
 		return nil, ErrEmptyString
@@ -71,7 +69,7 @@ func Decode(input string) ([]byte, error) {
 	return b, err
 }
 
-// MustDecode decodes a hex string with 0x prefix. It panics for invalid input.
+// MustDecode는 0x 접두사가 있는 16진수 문자열을 바이트열로 디코딩합니다. 잘못된 입력에 대해서는 패닉이 발생합니다.
 func MustDecode(input string) []byte {
 	dec, err := Decode(input)
 	if err != nil {
@@ -80,7 +78,7 @@ func MustDecode(input string) []byte {
 	return dec
 }
 
-// Encode encodes b as a hex string with 0x prefix.
+// Encode는 0x 접두사가 있는 16진수 문자열로 b를 인코딩합니다.
 func Encode(b []byte) string {
 	enc := make([]byte, len(b)*2+2)
 	copy(enc, "0x")
@@ -88,7 +86,7 @@ func Encode(b []byte) string {
 	return string(enc)
 }
 
-// DecodeUint64 decodes a hex string with 0x prefix as a quantity.
+// DecodeUint64는 0x 접두사가 있는 16진수 문자열을 숫자로 디코딩합니다.
 func DecodeUint64(input string) (uint64, error) {
 	raw, err := checkNumber(input)
 	if err != nil {
@@ -101,8 +99,7 @@ func DecodeUint64(input string) (uint64, error) {
 	return dec, err
 }
 
-// MustDecodeUint64 decodes a hex string with 0x prefix as a quantity.
-// It panics for invalid input.
+// MustDecodeUint64는 0x 접두사가 있는 16진수 문자열을 숫자로 디코딩합니다. 잘못된 입력에 대해서는 패닉이 발생합니다.
 func MustDecodeUint64(input string) uint64 {
 	dec, err := DecodeUint64(input)
 	if err != nil {
@@ -111,31 +108,31 @@ func MustDecodeUint64(input string) uint64 {
 	return dec
 }
 
-// EncodeUint64 encodes i as a hex string with 0x prefix.
+// EncodeUint64는 0x 접두사가 있는 16진수 문자열로 i를 인코딩합니다.
 func EncodeUint64(i uint64) string {
 	enc := make([]byte, 2, 10)
 	copy(enc, "0x")
 	return string(strconv.AppendUint(enc, i, 16))
 }
 
-var bigWordNibbles int
+var bigWordNibbles int // big.Word에 필요한 nibble 수 (16 또는 8), init() 함수에서 초기화됩니다.
 
 func init() {
-	// This is a weird way to compute the number of nibbles required for big.Word.
-	// The usual way would be to use constant arithmetic but go vet can't handle that.
+	// 이것은 big.Word에 필요한 nibble 수를 계산하는 이상한 방법입니다.
+	// 일반적인 방법은 상수를 사용한 산술 연산이지만, go vet은 그러한 방법을 처리할 수 없습니다.
 	b, _ := new(big.Int).SetString("FFFFFFFFFF", 16)
 	switch len(b.Bits()) {
 	case 1:
-		bigWordNibbles = 16
+		bigWordNibbles = 16 // 32 / 2
 	case 2:
-		bigWordNibbles = 8
+		bigWordNibbles = 8 // 16 / 2
 	default:
 		panic("weird big.Word size")
 	}
 }
 
-// DecodeBig decodes a hex string with 0x prefix as a quantity.
-// Numbers larger than 256 bits are not accepted.
+// DecodeBig는 0x 접두사가 있는 16진수 문자열을 big.Int로 디코딩합니다.
+// 256비트보다 큰 숫자는 허용되지 않습니다.
 func DecodeBig(input string) (*big.Int, error) {
 	raw, err := checkNumber(input)
 	if err != nil {
@@ -165,8 +162,8 @@ func DecodeBig(input string) (*big.Int, error) {
 	return dec, nil
 }
 
-// MustDecodeBig decodes a hex string with 0x prefix as a quantity.
-// It panics for invalid input.
+// MustDecodeBig은 0x 접두사가 있는 16진수 문자열을 big.Int로 디코딩합니다.
+// 잘못된 입력에 대해서는 패닉이 발생합니다.
 func MustDecodeBig(input string) *big.Int {
 	dec, err := DecodeBig(input)
 	if err != nil {
@@ -175,7 +172,7 @@ func MustDecodeBig(input string) *big.Int {
 	return dec
 }
 
-// EncodeBig encodes bigint as a hex string with 0x prefix.
+// EncodeBig은 bigint를 0x 접두사가 있는 16진수 문자열로 인코딩합니다.
 func EncodeBig(bigint *big.Int) string {
 	if sign := bigint.Sign(); sign == 0 {
 		return "0x0"
@@ -186,10 +183,12 @@ func EncodeBig(bigint *big.Int) string {
 	}
 }
 
+// has0xPrefix는 input이 0x 접두사를 가지고 있는지 확인합니다.
 func has0xPrefix(input string) bool {
 	return len(input) >= 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X')
 }
 
+// checkNumber는 0x 접두사가 있는 16진수 문자열이 정수로 디코딩될 수 있는지 확인합니다.
 func checkNumber(input string) (raw string, err error) {
 	if len(input) == 0 {
 		return "", ErrEmptyString
@@ -207,8 +206,9 @@ func checkNumber(input string) (raw string, err error) {
 	return input, nil
 }
 
-const badNibble = ^uint64(0)
+const badNibble = ^uint64(0) // 64비트의 모든 비트가 1인 상수
 
+// decodeNibble는 16진수 문자를 정수로 디코딩합니다.
 func decodeNibble(in byte) uint64 {
 	switch {
 	case in >= '0' && in <= '9':
@@ -222,6 +222,7 @@ func decodeNibble(in byte) uint64 {
 	}
 }
 
+// mapError는 strconv 또는 hex 패키지에서 발생한 오류를 hexutil 패키지에서 정의한 오류로 매핑합니다.
 func mapError(err error) error {
 	if err, ok := err.(*strconv.NumError); ok {
 		switch err.Err {

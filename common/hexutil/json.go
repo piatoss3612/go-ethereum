@@ -35,11 +35,11 @@ var (
 	u256T   = reflect.TypeOf((*uint256.Int)(nil))
 )
 
-// Bytes marshals/unmarshals as a JSON string with 0x prefix.
-// The empty slice marshals as "0x".
+// Bytes는 0x 접두사가 있는 JSON 문자열로 마샬링/언마샬링됩니다.
+// 빈 슬라이스는 "0x"로 마샬링됩니다.
 type Bytes []byte
 
-// MarshalText implements encoding.TextMarshaler
+// MarshalText는 encoding.TextMarshaler를 구현합니다.
 func (b Bytes) MarshalText() ([]byte, error) {
 	result := make([]byte, len(b)*2+2)
 	copy(result, `0x`)
@@ -47,7 +47,7 @@ func (b Bytes) MarshalText() ([]byte, error) {
 	return result, nil
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
+// UnmarshalJSON은 json.Unmarshaler를 구현합니다.
 func (b *Bytes) UnmarshalJSON(input []byte) error {
 	if !isString(input) {
 		return errNonString(bytesT)
@@ -55,7 +55,7 @@ func (b *Bytes) UnmarshalJSON(input []byte) error {
 	return wrapTypeError(b.UnmarshalText(input[1:len(input)-1]), bytesT)
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler.
+// UnmarshalText는 encoding.TextUnmarshaler를 구현합니다.
 func (b *Bytes) UnmarshalText(input []byte) error {
 	raw, err := checkText(input, true)
 	if err != nil {
@@ -70,15 +70,15 @@ func (b *Bytes) UnmarshalText(input []byte) error {
 	return err
 }
 
-// String returns the hex encoding of b.
+// String은 b의 16진수 인코딩을 반환합니다.
 func (b Bytes) String() string {
 	return Encode(b)
 }
 
-// ImplementsGraphQLType returns true if Bytes implements the specified GraphQL type.
+// ImplementsGraphQLType은 Bytes가 특정한 GraphQL 타입을 구현하는지 여부를 반환합니다.
 func (b Bytes) ImplementsGraphQLType(name string) bool { return name == "Bytes" }
 
-// UnmarshalGraphQL unmarshals the provided GraphQL query data.
+// UnmarshalGraphQL은 제공된 GraphQL 쿼리 데이터를 Bytes로 변환합니다.
 func (b *Bytes) UnmarshalGraphQL(input interface{}) error {
 	var err error
 	switch input := input.(type) {
@@ -94,9 +94,8 @@ func (b *Bytes) UnmarshalGraphQL(input interface{}) error {
 	return err
 }
 
-// UnmarshalFixedJSON decodes the input as a string with 0x prefix. The length of out
-// determines the required input length. This function is commonly used to implement the
-// UnmarshalJSON method for fixed-size types.
+// UnmarshalFixedJSON은 0x 접두사가 있는 JSON 문자열을 디코딩합니다. out의 길이는 필요한 입력 길이를 결정합니다.
+// 이 함수는 고정 크기 타입의 UnmarshalJSON 메서드를 구현하는 데 주로 사용됩니다.
 func UnmarshalFixedJSON(typ reflect.Type, input, out []byte) error {
 	if !isString(input) {
 		return errNonString(typ)
@@ -104,9 +103,8 @@ func UnmarshalFixedJSON(typ reflect.Type, input, out []byte) error {
 	return wrapTypeError(UnmarshalFixedText(typ.String(), input[1:len(input)-1], out), typ)
 }
 
-// UnmarshalFixedText decodes the input as a string with 0x prefix. The length of out
-// determines the required input length. This function is commonly used to implement the
-// UnmarshalText method for fixed-size types.
+// UnmarshalFixedText는 0x 접두사가 있는 문자열을 디코딩합니다. out의 길이는 필요한 입력 길이를 결정합니다.
+// 이 함수는 고정 크기 타입의 UnmarshalText 메서드를 구현하는 데 주로 사용됩니다.
 func UnmarshalFixedText(typname string, input, out []byte) error {
 	raw, err := checkText(input, true)
 	if err != nil {
@@ -115,7 +113,7 @@ func UnmarshalFixedText(typname string, input, out []byte) error {
 	if len(raw)/2 != len(out) {
 		return fmt.Errorf("hex string has length %d, want %d for %s", len(raw), len(out)*2, typname)
 	}
-	// Pre-verify syntax before modifying out.
+	// out을 수정하기 전에 구문을 사전 확인합니다.
 	for _, b := range raw {
 		if decodeNibble(b) == badNibble {
 			return ErrSyntax
@@ -125,9 +123,8 @@ func UnmarshalFixedText(typname string, input, out []byte) error {
 	return nil
 }
 
-// UnmarshalFixedUnprefixedText decodes the input as a string with optional 0x prefix. The
-// length of out determines the required input length. This function is commonly used to
-// implement the UnmarshalText method for fixed-size types.
+// UnmarshalFixedUnprefixedText는 0x 접두사가 있거나 없는 문자열을 디코딩합니다. out의 길이는 필요한 입력 길이를 결정합니다.
+// 이 함수는 고정 크기 타입의 UnmarshalText 메서드를 구현하는 데 주로 사용됩니다.
 func UnmarshalFixedUnprefixedText(typname string, input, out []byte) error {
 	raw, err := checkText(input, false)
 	if err != nil {
@@ -146,20 +143,19 @@ func UnmarshalFixedUnprefixedText(typname string, input, out []byte) error {
 	return nil
 }
 
-// Big marshals/unmarshals as a JSON string with 0x prefix.
-// The zero value marshals as "0x0".
+// Big은 0x 접두사가 있는 JSON 문자열로 마샬링/언마샬링됩니다.
+// 0은 "0x0"으로 마샬링됩니다.
 //
-// Negative integers are not supported at this time. Attempting to marshal them will
-// return an error. Values larger than 256bits are rejected by Unmarshal but will be
-// marshaled without error.
+// 음수는 현재 지원되지 않습니다. 음수를 마샬링하려고 하면 오류가 발생합니다.
+// 256비트보다 큰 값은 Unmarshal에서 거부되지만 오류 없이 마샬링됩니다.
 type Big big.Int
 
-// MarshalText implements encoding.TextMarshaler
+// MarshalText는 encoding.TextMarshaler를 구현합니다.
 func (b Big) MarshalText() ([]byte, error) {
 	return []byte(EncodeBig((*big.Int)(&b))), nil
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
+// UnmarshalJSON은 json.Unmarshaler를 구현합니다.
 func (b *Big) UnmarshalJSON(input []byte) error {
 	if !isString(input) {
 		return errNonString(bigT)
@@ -167,7 +163,7 @@ func (b *Big) UnmarshalJSON(input []byte) error {
 	return wrapTypeError(b.UnmarshalText(input[1:len(input)-1]), bigT)
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler
+// UnmarshalText는 encoding.TextUnmarshaler를 구현합니다.
 func (b *Big) UnmarshalText(input []byte) error {
 	raw, err := checkNumberText(input)
 	if err != nil {
@@ -199,20 +195,20 @@ func (b *Big) UnmarshalText(input []byte) error {
 	return nil
 }
 
-// ToInt converts b to a big.Int.
+// ToInt는 b를 big.Int로 변환합니다.
 func (b *Big) ToInt() *big.Int {
 	return (*big.Int)(b)
 }
 
-// String returns the hex encoding of b.
+// String은 b의 16진수 인코딩을 반환합니다.
 func (b *Big) String() string {
 	return EncodeBig(b.ToInt())
 }
 
-// ImplementsGraphQLType returns true if Big implements the provided GraphQL type.
+// ImplementsGraphQLType은 Big이 특정한 GraphQL 타입을 구현하는지 여부를 반환합니다.
 func (b Big) ImplementsGraphQLType(name string) bool { return name == "BigInt" }
 
-// UnmarshalGraphQL unmarshals the provided GraphQL query data.
+// UnmarshalGraphQL은 제공된 GraphQL 쿼리 데이터를 Big으로 변환합니다.
 func (b *Big) UnmarshalGraphQL(input interface{}) error {
 	var err error
 	switch input := input.(type) {
@@ -228,25 +224,28 @@ func (b *Big) UnmarshalGraphQL(input interface{}) error {
 	return err
 }
 
-// U256 marshals/unmarshals as a JSON string with 0x prefix.
-// The zero value marshals as "0x0".
+// U256은 0x 접두사가 있는 JSON 문자열로 마샬링/언마샬링됩니다.
+// 0은 "0x0"으로 마샬링됩니다.
 type U256 uint256.Int
 
-// MarshalText implements encoding.TextMarshaler
+// U256은 0x 접두사가 있는 JSON 문자열로 마샬링/언마샬링됩니다.
 func (b U256) MarshalText() ([]byte, error) {
 	u256 := (*uint256.Int)(&b)
 	return []byte(u256.Hex()), nil
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
+// UnmarshalJSON은 json.Unmarshaler를 구현합니다.
 func (b *U256) UnmarshalJSON(input []byte) error {
 	// The uint256.Int.UnmarshalJSON method accepts "dec", "0xhex"; we must be
 	// more strict, hence we check string and invoke SetFromHex directly.
+
+	// uint256.Int.UnmarshalJSON 메서드는 "dec", "0xhex"를 허용합니다.
+	// 더 엄격한 방식으로 입력을 확인해야 하므로, 입력이 문자열인지 확인합니다.
 	if !isString(input) {
 		return errNonString(u256T)
 	}
-	// The hex decoder needs to accept empty string ("") as '0', which uint256.Int
-	// would reject.
+	// uint256.Int는 빈 문자열("")을 '0'으로 허용하지 않으므로, 입력이 빈 문자열인지 확인합니다.
+	// 길이가 2인 경우는 "0x"이므로, 0으로 설정합니다.
 	if len(input) == 2 {
 		(*uint256.Int)(b).Clear()
 		return nil
@@ -258,23 +257,23 @@ func (b *U256) UnmarshalJSON(input []byte) error {
 	return nil
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler
+// UnmarshalText는 encoding.TextUnmarshaler를 구현합니다.
 func (b *U256) UnmarshalText(input []byte) error {
-	// The uint256.Int.UnmarshalText method accepts "dec", "0xhex"; we must be
-	// more strict, hence we check string and invoke SetFromHex directly.
+	// uint256.Int.UnmarshalText 메서드는 "dec", "0xhex"를 허용합니다.
+	// 더 엄격한 방식으로 입력을 확인하고, SetFromHex를 직접 호출합니다.
 	return (*uint256.Int)(b).SetFromHex(string(input))
 }
 
-// String returns the hex encoding of b.
+// String은 b의 16진수 인코딩을 반환합니다.
 func (b *U256) String() string {
 	return (*uint256.Int)(b).Hex()
 }
 
-// Uint64 marshals/unmarshals as a JSON string with 0x prefix.
-// The zero value marshals as "0x0".
+// Uint64는 0x 접두사가 있는 JSON 문자열로 마샬링/언마샬링됩니다.
+// 0은 "0x0"으로 마샬링됩니다.
 type Uint64 uint64
 
-// MarshalText implements encoding.TextMarshaler.
+// MarshalText는 encoding.TextMarshaler를 구현합니다.
 func (b Uint64) MarshalText() ([]byte, error) {
 	buf := make([]byte, 2, 10)
 	copy(buf, `0x`)
@@ -282,7 +281,7 @@ func (b Uint64) MarshalText() ([]byte, error) {
 	return buf, nil
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
+// UnmarshalJSON은 json.Unmarshaler를 구현합니다.
 func (b *Uint64) UnmarshalJSON(input []byte) error {
 	if !isString(input) {
 		return errNonString(uint64T)
@@ -290,7 +289,7 @@ func (b *Uint64) UnmarshalJSON(input []byte) error {
 	return wrapTypeError(b.UnmarshalText(input[1:len(input)-1]), uint64T)
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler
+// UnmarshalText는 encoding.TextUnmarshaler를 구현합니다.
 func (b *Uint64) UnmarshalText(input []byte) error {
 	raw, err := checkNumberText(input)
 	if err != nil {
@@ -312,15 +311,15 @@ func (b *Uint64) UnmarshalText(input []byte) error {
 	return nil
 }
 
-// String returns the hex encoding of b.
+// String은 b의 16진수 인코딩을 반환합니다.
 func (b Uint64) String() string {
 	return EncodeUint64(uint64(b))
 }
 
-// ImplementsGraphQLType returns true if Uint64 implements the provided GraphQL type.
+// ImplementsGraphQLType은 Uint64가 제공된 GraphQL 타입을 구현하는지 여부를 반환합니다.
 func (b Uint64) ImplementsGraphQLType(name string) bool { return name == "Long" }
 
-// UnmarshalGraphQL unmarshals the provided GraphQL query data.
+// UnmarshalGraphQL은 제공된 GraphQL 쿼리 데이터를 Uint64로 변환합니다.
 func (b *Uint64) UnmarshalGraphQL(input interface{}) error {
 	var err error
 	switch input := input.(type) {
@@ -334,16 +333,16 @@ func (b *Uint64) UnmarshalGraphQL(input interface{}) error {
 	return err
 }
 
-// Uint marshals/unmarshals as a JSON string with 0x prefix.
-// The zero value marshals as "0x0".
+// Uint는 0x 접두사가 있는 JSON 문자열로 마샬링/언마샬링됩니다.
+// 0은 "0x0"으로 마샬링됩니다.
 type Uint uint
 
-// MarshalText implements encoding.TextMarshaler.
+// MarshalText는 encoding.TextMarshaler를 구현합니다.
 func (b Uint) MarshalText() ([]byte, error) {
 	return Uint64(b).MarshalText()
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
+// UnmarshalJSON은 json.Unmarshaler를 구현합니다.
 func (b *Uint) UnmarshalJSON(input []byte) error {
 	if !isString(input) {
 		return errNonString(uintT)
@@ -351,7 +350,7 @@ func (b *Uint) UnmarshalJSON(input []byte) error {
 	return wrapTypeError(b.UnmarshalText(input[1:len(input)-1]), uintT)
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler.
+// UnmarshalText는 encoding.TextUnmarshaler를 구현합니다.
 func (b *Uint) UnmarshalText(input []byte) error {
 	var u64 Uint64
 	err := u64.UnmarshalText(input)
@@ -364,19 +363,22 @@ func (b *Uint) UnmarshalText(input []byte) error {
 	return nil
 }
 
-// String returns the hex encoding of b.
+// String은 b의 16진수 인코딩을 반환합니다.
 func (b Uint) String() string {
 	return EncodeUint64(uint64(b))
 }
 
+// isString은 문자열이 따옴표로 묶인 문자열인지 여부를 반환합니다.
 func isString(input []byte) bool {
 	return len(input) >= 2 && input[0] == '"' && input[len(input)-1] == '"'
 }
 
+// bytesHave0xPrefix는 입력이 0x 접두사를 가지고 있는지 여부를 반환합니다.
 func bytesHave0xPrefix(input []byte) bool {
 	return len(input) >= 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X')
 }
 
+// checkText는 0x 접두사를 제거하고 입력을 반환합니다. wantPrefix가 true이면 0x 접두사가 없으면 오류가 발생합니다.
 func checkText(input []byte, wantPrefix bool) ([]byte, error) {
 	if len(input) == 0 {
 		return nil, nil // empty strings are allowed
@@ -392,9 +394,10 @@ func checkText(input []byte, wantPrefix bool) ([]byte, error) {
 	return input, nil
 }
 
+// checkNumberText는 0x 접두사를 제거하고 입력을 반환합니다.
 func checkNumberText(input []byte) (raw []byte, err error) {
 	if len(input) == 0 {
-		return nil, nil // empty strings are allowed
+		return nil, nil // 빈 문자열은 빈 슬라이스로 반환합니다.
 	}
 	if !bytesHave0xPrefix(input) {
 		return nil, ErrMissingPrefix
@@ -409,6 +412,7 @@ func checkNumberText(input []byte) (raw []byte, err error) {
 	return input, nil
 }
 
+// wrapTypeError는 언마샬링 오류를 json.UnmarshalTypeError로 래핑합니다.
 func wrapTypeError(err error, typ reflect.Type) error {
 	if _, ok := err.(*decError); ok {
 		return &json.UnmarshalTypeError{Value: err.Error(), Type: typ}
@@ -416,6 +420,7 @@ func wrapTypeError(err error, typ reflect.Type) error {
 	return err
 }
 
+// errNonString는 문자열이 아닌 값을 언마샬링하려고 할 때 발생하는 오류입니다.
 func errNonString(typ reflect.Type) error {
 	return &json.UnmarshalTypeError{Value: "non-string", Type: typ}
 }
