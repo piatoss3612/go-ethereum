@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 )
 
-// FileExist checks if a file exists at filePath.
+// FileExist는 filePath에 파일이 존재하는지 확인합니다.
 func FileExist(filePath string) bool {
 	_, err := os.Stat(filePath)
 	if err != nil && os.IsNotExist(err) {
@@ -31,7 +31,7 @@ func FileExist(filePath string) bool {
 	return true
 }
 
-// AbsolutePath returns datadir + filename, or filename if it is absolute.
+// AbsolutePath는 filename이 절대 경로인 경우 filename을 반환하고, 그렇지 않은 경우 datadir와 filename을 결합하여 반환합니다.
 func AbsolutePath(datadir string, filename string) string {
 	if filepath.IsAbs(filename) {
 		return filename

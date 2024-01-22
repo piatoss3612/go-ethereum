@@ -20,27 +20,25 @@ import (
 	"fmt"
 )
 
-// StorageSize is a wrapper around a float value that supports user friendly
-// formatting.
+// StorageSize는 사용자 친화적인 포맷을 지원하기 위해 float 값을 래핑한 별칭 타입이다.
 type StorageSize float64
 
-// String implements the stringer interface.
+// String은 stringer 인터페이스를 구현하였다. (소수점 2자리까지 표시)
 func (s StorageSize) String() string {
 	if s > 1099511627776 {
-		return fmt.Sprintf("%.2f TiB", s/1099511627776)
+		return fmt.Sprintf("%.2f TiB", s/1099511627776) // 테비바이트
 	} else if s > 1073741824 {
-		return fmt.Sprintf("%.2f GiB", s/1073741824)
+		return fmt.Sprintf("%.2f GiB", s/1073741824) // 기비바이트
 	} else if s > 1048576 {
-		return fmt.Sprintf("%.2f MiB", s/1048576)
+		return fmt.Sprintf("%.2f MiB", s/1048576) // 메비바이트
 	} else if s > 1024 {
-		return fmt.Sprintf("%.2f KiB", s/1024)
+		return fmt.Sprintf("%.2f KiB", s/1024) // 킬로바이트
 	} else {
-		return fmt.Sprintf("%.2f B", s)
+		return fmt.Sprintf("%.2f B", s) // 바이트
 	}
 }
 
-// TerminalString implements log.TerminalStringer, formatting a string for console
-// output during logging.
+// TerminalString은 log.TerminalStringer를 구현하였으며, 로깅 중 콘솔 출력을 위한 문자열을 포맷합니다.
 func (s StorageSize) TerminalString() string {
 	if s > 1099511627776 {
 		return fmt.Sprintf("%.2fTiB", s/1099511627776)
