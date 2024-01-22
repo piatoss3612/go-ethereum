@@ -22,7 +22,7 @@ import (
 	"os"
 )
 
-// LoadJSON은 주어진 파일을 읽고 해당 내용을 언마샬합니다.
+// LoadJSON은 주어진 파일을 읽고 해당 내용을 val로 변환합니다.
 func LoadJSON(file string, val interface{}) error {
 	content, err := os.ReadFile(file)
 	if err != nil {

@@ -19,28 +19,23 @@ package bitutil
 import "errors"
 
 var (
-	// errMissingData is returned from decompression if the byte referenced by
-	// the bitset header overflows the input data.
+	// errMissingData는 비트셋 헤더가 참조하는 바이트가 입력 데이터의 길이를 초과하는 위치를 가리킬 때, 압축 해제에서 반환됩니다.
 	errMissingData = errors.New("missing bytes on input")
 
-	// errUnreferencedData is returned from decompression if not all bytes were used
-	// up from the input data after decompressing it.
+	// errUnreferencedData는 압축 해제에서 모든 바이트가 사용되지 않은 경우 반환됩니다.
 	errUnreferencedData = errors.New("extra bytes on input")
 
-	// errExceededTarget is returned from decompression if the bitset header has
-	// more bits defined than the number of target buffer space available.
+	// errExceededTarget는 비트셋 헤더에 대상 버퍼 공간보다 더 많은 비트가 정의된 경우, 압축 해제에서 반환됩니다.
 	errExceededTarget = errors.New("target data size exceeded")
 
-	// errZeroContent is returned from decompression if a data byte referenced in
-	// the bitset header is actually a zero byte.
+	// errZeroContent는 압축 해제에서, 압축된 데이터 바이트가 0인 경우(잘못된 압축) 반환됩니다.
 	errZeroContent = errors.New("zero byte in input content")
 )
 
-// The compression algorithm implemented by CompressBytes and DecompressBytes is
-// optimized for sparse input data which contains a lot of zero bytes. Decompression
-// requires knowledge of the decompressed data length.
+// CompressBytes와 DecompressBytes가 구현한 압축 알고리즘은 많은 zero 바이트값을 포함하는 희소 입력 데이터에 최적화되어 있습니다.
+// 이 알고리즘은 비압축 데이터 길이를 알아야만 압축을 해제할 수 있습니다.
 //
-// Compression works as follows:
+// 압축은 다음과 같이 작동합니다.
 //
 //   if data only contains zeroes,
 //       CompressBytes(data) == nil
@@ -54,51 +49,47 @@ var (
 //             len(nonZeroBitset(data)) == (len(data)+7)/8
 //         nonZeroBytes(data) contains the non-zero bytes of data in the same order
 
-// CompressBytes compresses the input byte slice according to the sparse bitset
-// representation algorithm. If the result is bigger than the original input, no
-// compression is done.
+// CompressBytes는 희소 비트셋 알고리즘(sparse bitset algorithm)에 따라 입력 바이트 슬라이스를 압축합니다.
+// 결과가 원래 입력보다 큰 경우 압축이 수행되지 않습니다.
 func CompressBytes(data []byte) []byte {
 	if out := bitsetEncodeBytes(data); len(out) < len(data) {
 		return out
 	}
-	cpy := make([]byte, len(data))
+	cpy := make([]byte, len(data)) // 길이가 길거나 같은 경우 원래 데이터를 복사하여 반환합니다.
 	copy(cpy, data)
 	return cpy
 }
 
-// bitsetEncodeBytes compresses the input byte slice according to the sparse
-// bitset representation algorithm.
+// bitsetEncodeBytes는 희소 비트셋 알고리즘(sparse bitset algorithm)에 따라 입력 바이트 슬라이스를 압축합니다.
 func bitsetEncodeBytes(data []byte) []byte {
-	// Empty slices get compressed to nil
+	// 빈 슬라이스는 nil로 압축됩니다.
 	if len(data) == 0 {
 		return nil
 	}
-	// One byte slices compress to nil or retain the single byte
+	// 바이트 슬라이스의 길이가 1이면 nil로 압축(0)되거나 단일 바이트를 유지합니다.
 	if len(data) == 1 {
 		if data[0] == 0 {
 			return nil
 		}
 		return data
 	}
-	// Calculate the bitset of set bytes, and gather the non-zero bytes
-	nonZeroBitset := make([]byte, (len(data)+7)/8)
-	nonZeroBytes := make([]byte, 0, len(data))
+	nonZeroBitset := make([]byte, (len(data)+7)/8) // 1바이트당 8비트를 사용합니다.
+	nonZeroBytes := make([]byte, 0, len(data))     // 0이 아닌 바이트를 수집합니다.
 
 	for i, b := range data {
 		if b != 0 {
 			nonZeroBytes = append(nonZeroBytes, b)
-			nonZeroBitset[i/8] |= 1 << byte(7-i%8)
+			nonZeroBitset[i/8] |= 1 << byte(7-i%8) // i번째 비트가 0이 아니므로, i/8번째 바이트의 (7-i%8)번째 비트를 1로 설정합니다.
 		}
 	}
-	if len(nonZeroBytes) == 0 {
+	if len(nonZeroBytes) == 0 { // 모든 바이트가 0이면 nil로 압축합니다.
 		return nil
 	}
-	return append(bitsetEncodeBytes(nonZeroBitset), nonZeroBytes...)
+	return append(bitsetEncodeBytes(nonZeroBitset), nonZeroBytes...) // 재귀적으로 압축합니다.
 }
 
-// DecompressBytes decompresses data with a known target size. If the input data
-// matches the size of the target, it means no compression was done in the first
-// place.
+// DecompressBytes는 주어진 타겟 사이즈로 데이터를 압축 해제합니다.
+// 입력 데이터가 타겟 사이즈와 일치한다면, 압축이 수행되지 않았다는 것을 의미합니다.
 func DecompressBytes(data []byte, target int) ([]byte, error) {
 	if len(data) > target {
 		return nil, errExceededTarget
@@ -111,7 +102,7 @@ func DecompressBytes(data []byte, target int) ([]byte, error) {
 	return bitsetDecodeBytes(data, target)
 }
 
-// bitsetDecodeBytes decompresses data with a known target size.
+// bitsetDecodeBytes는 주어진 타겟 사이즈로 데이터를 압축 해제합니다.
 func bitsetDecodeBytes(data []byte, target int) ([]byte, error) {
 	out, size, err := bitsetDecodePartialBytes(data, target)
 	if err != nil {
@@ -123,42 +114,42 @@ func bitsetDecodeBytes(data []byte, target int) ([]byte, error) {
 	return out, nil
 }
 
-// bitsetDecodePartialBytes decompresses data with a known target size, but does
-// not enforce consuming all the input bytes. In addition to the decompressed
-// output, the function returns the length of compressed input data corresponding
-// to the output as the input slice may be longer.
+// bitsetDecodePartialBytes는 주어진 목표 크기로 데이터의 압축을 해제하지만, 모든 입력 바이트를 사용하도록 강제하지 않습니다.
+// 이 함수는 압축 해제된 출력 외에도, 출력에 대응하는 압축된 입력 데이터의 길이도 반환합니다. (입력 슬라이스가 길 수 있기 때문입니다.)
 func bitsetDecodePartialBytes(data []byte, target int) ([]byte, int, error) {
-	// Sanity check 0 targets to avoid infinite recursion
+	// 무한 재귀를 피하기 위해 타겟이 0인 경우를 확인합니다.
 	if target == 0 {
 		return nil, 0, nil
 	}
-	// Handle the zero and single byte corner cases
+	// data가 비어있는 경우, 또는 target이 1인 경우를 처리합니다.
 	decomp := make([]byte, target)
 	if len(data) == 0 {
 		return decomp, 0, nil
 	}
 	if target == 1 {
-		decomp[0] = data[0] // copy to avoid referencing the input slice
+		decomp[0] = data[0] // 입력 슬라이스를 참조하지 않고, 갑을 복사합니다.
 		if data[0] != 0 {
 			return decomp, 1, nil
 		}
 		return decomp, 0, nil
 	}
+	// 비트셋을 압축 해제하고, 0이 아닌 바이트를 분리합니다.
 	// Decompress the bitset of set bytes and distribute the non zero bytes
 	nonZeroBitset, ptr, err := bitsetDecodePartialBytes(data, (target+7)/8)
 	if err != nil {
 		return nil, ptr, err
 	}
+	// 비트셋을 사용하여 0이 아닌 바이트를 복원합니다.
 	for i := 0; i < 8*len(nonZeroBitset); i++ {
 		if nonZeroBitset[i/8]&(1<<byte(7-i%8)) != 0 {
-			// Make sure we have enough data to push into the correct slot
+			// 입력 데이터가 부족하면 에러를 반환합니다.
 			if ptr >= len(data) {
 				return nil, 0, errMissingData
 			}
 			if i >= len(decomp) {
 				return nil, 0, errExceededTarget
 			}
-			// Make sure the data is valid and push into the slot
+			// 데이터는 0이 아니어야 합니다.
 			if data[ptr] == 0 {
 				return nil, 0, errZeroContent
 			}
