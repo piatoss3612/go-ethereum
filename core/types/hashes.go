@@ -23,30 +23,29 @@ import (
 )
 
 var (
-	// EmptyRootHash is the known root hash of an empty merkle trie.
+	// EmptyRootHash는 빈 머클 트리의 루트 해시입니다.
 	EmptyRootHash = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 
-	// EmptyUncleHash is the known hash of the empty uncle set.
+	// EmptyUncleHash는 빈 엉클 집합의 해시입니다.
 	EmptyUncleHash = rlpHash([]*Header(nil)) // 1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347
 
-	// EmptyCodeHash is the known hash of the empty EVM bytecode.
+	// EmptyCodeHash는 빈 EVM 바이트 코드의 해시입니다. (keccak256)
 	EmptyCodeHash = crypto.Keccak256Hash(nil) // c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
 
-	// EmptyTxsHash is the known hash of the empty transaction set.
+	// EmptyTxsHash는 빈 트랜잭션 집합의 해시입니다. (빈 머클 트리의 루트 해시와 동일)
 	EmptyTxsHash = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 
-	// EmptyReceiptsHash is the known hash of the empty receipt set.
+	// EmptyReceiptsHash는 빈 영수증 집합의 해시입니다. (빈 머클 트리의 루트 해시와 동일)
 	EmptyReceiptsHash = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 
-	// EmptyWithdrawalsHash is the known hash of the empty withdrawal set.
+	// EmptyWithdrawalsHash는 빈 출금 집합의 해시입니다. (빈 머클 트리의 루트 해시와 동일)
 	EmptyWithdrawalsHash = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 
-	// EmptyVerkleHash is the known hash of an empty verkle trie.
+	// EmptyVerkleHash는 빈 버클 트리의 해시입니다.
 	EmptyVerkleHash = common.Hash{}
 )
 
-// TrieRootHash returns the hash itself if it's non-empty or the predefined
-// emptyHash one instead.
+// TrieRootHash는 비어 있지 않은 경우 해시 자체를 반환하거나 미리 정의된 빈 해시를 반환합니다.
 func TrieRootHash(hash common.Hash) common.Hash {
 	if hash == (common.Hash{}) {
 		log.Error("Zero trie root hash!")

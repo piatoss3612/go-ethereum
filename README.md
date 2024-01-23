@@ -6,7 +6,7 @@
   - [Table of Contents](#table-of-contents)
   - [Prerequisite](#prerequisite)
   - [Introduction](#introduction)
-  - [mdBook을 이용한 문서화](#mdbook%ec%9d%84-%ec%9d%b4%ec%9a%a9%ed%95%9c-%eb%ac%b8%ec%84%9c%ed%99%94)
+  - [mdBook](#mdBook)
 
 ## Prerequisite
 
