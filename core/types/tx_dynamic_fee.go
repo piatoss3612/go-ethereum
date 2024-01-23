@@ -24,32 +24,32 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
-// DynamicFeeTx represents an EIP-1559 transaction.
+// DynamicFeeTx는 EIP-1559 트랜잭션을 나타냅니다.
 type DynamicFeeTx struct {
 	ChainID    *big.Int
 	Nonce      uint64
 	GasTipCap  *big.Int // a.k.a. maxPriorityFeePerGas
 	GasFeeCap  *big.Int // a.k.a. maxFeePerGas
 	Gas        uint64
-	To         *common.Address `rlp:"nil"` // nil means contract creation
+	To         *common.Address `rlp:"nil"` // nil이면 컨트랙트 생성 트랜잭션
 	Value      *big.Int
 	Data       []byte
 	AccessList AccessList
 
-	// Signature values
+	// 서명 값
 	V *big.Int `json:"v" gencodec:"required"`
 	R *big.Int `json:"r" gencodec:"required"`
 	S *big.Int `json:"s" gencodec:"required"`
 }
 
-// copy creates a deep copy of the transaction data and initializes all fields.
+// copy는 트랜잭션 데이터의 깊은 복사본을 생성하여 반환합니다.
 func (tx *DynamicFeeTx) copy() TxData {
 	cpy := &DynamicFeeTx{
 		Nonce: tx.Nonce,
 		To:    copyAddressPtr(tx.To),
 		Data:  common.CopyBytes(tx.Data),
 		Gas:   tx.Gas,
-		// These are copied below.
+		// 이하의 값들은 아래에서 복사됩니다.
 		AccessList: make(AccessList, len(tx.AccessList)),
 		Value:      new(big.Int),
 		ChainID:    new(big.Int),
@@ -84,7 +84,7 @@ func (tx *DynamicFeeTx) copy() TxData {
 	return cpy
 }
 
-// accessors for innerTx.
+// innerTx에 대한 접근자
 func (tx *DynamicFeeTx) txType() byte           { return DynamicFeeTxType }
 func (tx *DynamicFeeTx) chainID() *big.Int      { return tx.ChainID }
 func (tx *DynamicFeeTx) accessList() AccessList { return tx.AccessList }

@@ -23,19 +23,19 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// LegacyTx is the transaction data of the original Ethereum transactions.
+// LegacyTx는 근본 이더리움 트랜잭션 데이터입니다.
 type LegacyTx struct {
-	Nonce    uint64          // nonce of sender account
-	GasPrice *big.Int        // wei per gas
-	Gas      uint64          // gas limit
-	To       *common.Address `rlp:"nil"` // nil means contract creation
-	Value    *big.Int        // wei amount
-	Data     []byte          // contract invocation input data
-	V, R, S  *big.Int        // signature values
+	Nonce    uint64          // 발신자 계정의 nonce
+	GasPrice *big.Int        // 가스당 wei
+	Gas      uint64          // 가스 한도
+	To       *common.Address `rlp:"nil"` // 수신자의 주소. nil이면 컨트랙트 생성 트랜잭션
+	Value    *big.Int        // wei 단위의 이더량
+	Data     []byte          // 컨트랙트 생성 트랜잭션의 경우 생성자의 바이트코드. 그 외의 경우 호출 데이터
+	V, R, S  *big.Int        // 서명 값
 }
 
-// NewTransaction creates an unsigned legacy transaction.
-// Deprecated: use NewTx instead.
+// NewTransaction은 서명되지 않은 기본 트랜잭션을 생성합니다.
+// Deprecated: NewTx를 사용하십시오.
 func NewTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
 	return NewTx(&LegacyTx{
 		Nonce:    nonce,
@@ -47,8 +47,8 @@ func NewTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit u
 	})
 }
 
-// NewContractCreation creates an unsigned legacy transaction.
-// Deprecated: use NewTx instead.
+// NewContractCreation은 서명되지 않은 기본 트랜잭션을 생성합니다.
+// Deprecated: NewTx를 사용하십시오.
 func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, data []byte) *Transaction {
 	return NewTx(&LegacyTx{
 		Nonce:    nonce,
@@ -59,7 +59,7 @@ func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPric
 	})
 }
 
-// copy creates a deep copy of the transaction data and initializes all fields.
+// copy는 트랜잭션 데이터의 깊은 복사본을 생성하여 반환합니다.
 func (tx *LegacyTx) copy() TxData {
 	cpy := &LegacyTx{
 		Nonce: tx.Nonce,
@@ -91,7 +91,7 @@ func (tx *LegacyTx) copy() TxData {
 	return cpy
 }
 
-// accessors for innerTx.
+// innerTx에 대한 접근자
 func (tx *LegacyTx) txType() byte           { return LegacyTxType }
 func (tx *LegacyTx) chainID() *big.Int      { return deriveChainId(tx.V) }
 func (tx *LegacyTx) accessList() AccessList { return nil }

@@ -27,15 +27,15 @@ import (
 //go:generate go run github.com/fjl/gencodec -type Withdrawal -field-override withdrawalMarshaling -out gen_withdrawal_json.go
 //go:generate go run ../../rlp/rlpgen -type Withdrawal -out gen_withdrawal_rlp.go
 
-// Withdrawal represents a validator withdrawal from the consensus layer.
+// Withdrawal은 합의 레이어로부터 검증자의 출금 작업을 나타냅니다.
 type Withdrawal struct {
-	Index     uint64         `json:"index"`          // monotonically increasing identifier issued by consensus layer
-	Validator uint64         `json:"validatorIndex"` // index of validator associated with withdrawal
-	Address   common.Address `json:"address"`        // target address for withdrawn ether
-	Amount    uint64         `json:"amount"`         // value of withdrawal in Gwei
+	Index     uint64         `json:"index"`          // 합의 레이어에 의해 발행된 단조 증가식 식별자
+	Validator uint64         `json:"validatorIndex"` // 출금과 관련된 검증자의 인덱스
+	Address   common.Address `json:"address"`        // 출금된 이더가 전송되는 주소
+	Amount    uint64         `json:"amount"`         // 출금액 (Gwei 단위)
 }
 
-// field type overrides for gencodec
+// gencodec을 위한 필드 유형 재정의
 type withdrawalMarshaling struct {
 	Index     hexutil.Uint64
 	Validator hexutil.Uint64
@@ -43,14 +43,15 @@ type withdrawalMarshaling struct {
 }
 
 // Withdrawals implements DerivableList for withdrawals.
+
+// Withdrawals는 머클루트를 계산하기 위해 필요한 인터페이스를 구현합니다.
 type Withdrawals []*Withdrawal
 
-// Len returns the length of s.
+// Len은 s의 길이를 반환합니다.
 func (s Withdrawals) Len() int { return len(s) }
 
-// EncodeIndex encodes the i'th withdrawal to w. Note that this does not check for errors
-// because we assume that *Withdrawal will only ever contain valid withdrawals that were either
-// constructed by decoding or via public API in this package.
+// EncodeIndex는 i번째 출금을 w에 인코딩합니다. 이는 오류를 확인하지 않습니다. 왜냐하면 *Withdrawal은
+// 디코딩 또는 이 패키지의 공개 API를 통해 구성된 유효한 출금만 포함하기 때문입니다.
 func (s Withdrawals) EncodeIndex(i int, w *bytes.Buffer) {
 	rlp.Encode(w, s[i])
 }

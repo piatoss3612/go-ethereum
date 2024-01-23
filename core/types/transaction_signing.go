@@ -29,65 +29,62 @@ import (
 
 var ErrInvalidChainId = errors.New("invalid chain id for signer")
 
-// sigCache is used to cache the derived sender and contains
-// the signer used to derive it.
+// sigCache는 서명자와 함께 파생된 발신자를 캐시하는 데 사용됩니다.
 type sigCache struct {
 	signer Signer
 	from   common.Address
 }
 
-// MakeSigner returns a Signer based on the given chain config and block number.
+// MakeSigner는 주어진 체인 설정 및 블록 번호를 기반으로 Signer를 생성하여 반환합니다.
 func MakeSigner(config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) Signer {
 	var signer Signer
 	switch {
-	case config.IsCancun(blockNumber, blockTime):
+	case config.IsCancun(blockNumber, blockTime): // Cancun
 		signer = NewCancunSigner(config.ChainID)
-	case config.IsLondon(blockNumber):
+	case config.IsLondon(blockNumber): // London
 		signer = NewLondonSigner(config.ChainID)
-	case config.IsBerlin(blockNumber):
+	case config.IsBerlin(blockNumber): // Berlin
 		signer = NewEIP2930Signer(config.ChainID)
-	case config.IsEIP155(blockNumber):
+	case config.IsEIP155(blockNumber): // EIP155
 		signer = NewEIP155Signer(config.ChainID)
-	case config.IsHomestead(blockNumber):
+	case config.IsHomestead(blockNumber): // Homestead
 		signer = HomesteadSigner{}
-	default:
+	default: // 그 외의 경우 (이더리움 프론티어)
 		signer = FrontierSigner{}
 	}
 	return signer
 }
 
-// LatestSigner returns the 'most permissive' Signer available for the given chain
-// configuration. Specifically, this enables support of all types of transactions
-// when their respective forks are scheduled to occur at any block number (or time)
-// in the chain config.
+// LatestSigner는 주어진 체인 구성에 대해 사용 가능한 '가장 허용 범위가 넓은' 서명자(Signer)를 반환합니다.
+// 구체적으로, 이 함수는 모든 유형의 트랜잭션을 지원하도록 합니다.
+// 이는 해당 포크가 체인 구성의 어떤 블록 번호(또는 시간)에서 발생할 예정인지 여부와 관계없이 가능합니다.
 //
-// Use this in transaction-handling code where the current block number is unknown. If you
-// have the current block number available, use MakeSigner instead.
+// 현재 블록 번호를 알 수 없는 트랜잭션을 처리하는 코드에서 이 함수를 사용하면 됩니다.
+// 현재 블록 번호를 사용할 수 있는 경우 MakeSigner를 사용하십시오.
 func LatestSigner(config *params.ChainConfig) Signer {
 	if config.ChainID != nil {
-		if config.CancunTime != nil {
+		if config.CancunTime != nil { // Cancun
 			return NewCancunSigner(config.ChainID)
 		}
-		if config.LondonBlock != nil {
+		if config.LondonBlock != nil { // London
 			return NewLondonSigner(config.ChainID)
 		}
-		if config.BerlinBlock != nil {
+		if config.BerlinBlock != nil { // Berlin
 			return NewEIP2930Signer(config.ChainID)
 		}
-		if config.EIP155Block != nil {
+		if config.EIP155Block != nil { // EIP155
 			return NewEIP155Signer(config.ChainID)
 		}
 	}
-	return HomesteadSigner{}
+	return HomesteadSigner{} // Homestead
 }
 
-// LatestSignerForChainID returns the 'most permissive' Signer available. Specifically,
-// this enables support for EIP-155 replay protection and all implemented EIP-2718
-// transaction types if chainID is non-nil.
+// LatestSignerForChainID는 사용 가능한 '가장 허용 범위가 넓은' 서명자(Signer)를 반환합니다.
+// chainID가 nil이 아닌 경우, 이 함수는 EIP-155 재생 방지 및 모든 EIP-2718 트랜잭션 유형을 지원합니다.
 //
-// Use this in transaction-handling code where the current block number and fork
-// configuration are unknown. If you have a ChainConfig, use LatestSigner instead.
-// If you have a ChainConfig and know the current block number, use MakeSigner instead.
+// 현재 블록 번호와 포크 구성이 알려지지 않은 트랜잭션 처리 코드에서 이 함수를 사용하면 됩니다.
+// ChainConfig가 있는 경우 LatestSigner를 사용하십시오.
+// ChainConfig가 있고 현재 블록 번호를 알고 있는 경우 MakeSigner를 사용하십시오.
 func LatestSignerForChainID(chainID *big.Int) Signer {
 	if chainID == nil {
 		return HomesteadSigner{}
@@ -95,17 +92,17 @@ func LatestSignerForChainID(chainID *big.Int) Signer {
 	return NewCancunSigner(chainID)
 }
 
-// SignTx signs the transaction using the given signer and private key.
+// SignTx는 주어진 서명자와 개인 키를 사용하여 트랜잭션에 서명합니다.
 func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, error) {
-	h := s.Hash(tx)
-	sig, err := crypto.Sign(h[:], prv)
+	h := s.Hash(tx)                    // 서명 해시 생성
+	sig, err := crypto.Sign(h[:], prv) // 개인 키로 서명
 	if err != nil {
 		return nil, err
 	}
-	return tx.WithSignature(s, sig)
+	return tx.WithSignature(s, sig) // 트랜잭션에 서명 추가
 }
 
-// SignNewTx creates a transaction and signs it.
+// SignNewTx는 트랜잭션을 생성하고 서명합니다.
 func SignNewTx(prv *ecdsa.PrivateKey, s Signer, txdata TxData) (*Transaction, error) {
 	tx := NewTx(txdata)
 	h := s.Hash(tx)
@@ -116,8 +113,8 @@ func SignNewTx(prv *ecdsa.PrivateKey, s Signer, txdata TxData) (*Transaction, er
 	return tx.WithSignature(s, sig)
 }
 
-// MustSignNewTx creates a transaction and signs it.
-// This panics if the transaction cannot be signed.
+// MustSignNewTx는 트랜잭션을 생성하고 서명합니다.
+// 트랜잭션에 서명할 수 없는 경우 패닉이 발생합니다.
 func MustSignNewTx(prv *ecdsa.PrivateKey, s Signer, txdata TxData) *Transaction {
 	tx, err := SignNewTx(prv, s, txdata)
 	if err != nil {
@@ -126,74 +123,70 @@ func MustSignNewTx(prv *ecdsa.PrivateKey, s Signer, txdata TxData) *Transaction 
 	return tx
 }
 
-// Sender returns the address derived from the signature (V, R, S) using secp256k1
-// elliptic curve and an error if it failed deriving or upon an incorrect
-// signature.
+// Sender는 secp256k1 타원 곡선을 사용하여 서명(V, R, S)에서 파생된 주소를 반환하고
+// 이 작업이 실패하거나 서명이 잘못된 경우 오류를 반환합니다.
 //
-// Sender may cache the address, allowing it to be used regardless of
-// signing method. The cache is invalidated if the cached signer does
-// not match the signer used in the current call.
+// Sender는 서명 방법과 관계없이 주소를 사용할 수 있도록 캐시할 수 있습니다.
+// 캐시는 현재 호출에서 사용된 서명자가 캐시된 서명자와 일치하지 않는 경우 무효화됩니다.
 func Sender(signer Signer, tx *Transaction) (common.Address, error) {
 	if sc := tx.from.Load(); sc != nil {
 		sigCache := sc.(sigCache)
-		// If the signer used to derive from in a previous
-		// call is not the same as used current, invalidate
-		// the cache.
+		// 이전 호출에서 사용된 서명자가 현재 서명자와 일치하는지 확인합니다.
 		if sigCache.signer.Equal(signer) {
 			return sigCache.from, nil
 		}
 	}
 
+	// 서명자가 일치하지 않는 경우 서명을 다시 계산합니다.
 	addr, err := signer.Sender(tx)
 	if err != nil {
 		return common.Address{}, err
 	}
+	// 서명자를 캐시합니다.
 	tx.from.Store(sigCache{signer: signer, from: addr})
 	return addr, nil
 }
 
-// Signer encapsulates transaction signature handling. The name of this type is slightly
-// misleading because Signers don't actually sign, they're just for validating and
-// processing of signatures.
+// Signer는 트랜잭션 서명 처리 기능을 캡슐화합니다. 이 타입의 이름은 약간 오해의 소지가 있습니다.
+// 왜냐하면 Signer는 실제로 서명하지 않고 서명을 검증하고 처리하기 위한 것이기 때문입니다.
 //
-// Note that this interface is not a stable API and may change at any time to accommodate
-// new protocol rules.
+// 참고로 이 인터페이스는 안정적인 API가 아니며 새로운 프로토콜 규칙을 수용하기 위해 언제든지 변경될 수 있습니다.
 type Signer interface {
-	// Sender returns the sender address of the transaction.
+	// Sender는 트랜잭션의 발신자 주소를 반환합니다.
 	Sender(tx *Transaction) (common.Address, error)
 
-	// SignatureValues returns the raw R, S, V values corresponding to the
-	// given signature.
+	// SignatureValues는 주어진 서명에 해당하는 원시 R, S, V 값을 반환합니다.
 	SignatureValues(tx *Transaction, sig []byte) (r, s, v *big.Int, err error)
 	ChainID() *big.Int
 
-	// Hash returns 'signature hash', i.e. the transaction hash that is signed by the
-	// private key. This hash does not uniquely identify the transaction.
+	// Hash는 '서명 해시'를 반환합니다. 즉, 개인 키를 사용하여 서명되기 전의 트랜잭션 해시입니다.
+	// 이 해시는 트랜잭션을 고유하게 식별하지는 않습니다.
 	Hash(tx *Transaction) common.Hash
 
-	// Equal returns true if the given signer is the same as the receiver.
+	// Equal은 주어진 서명자가 수신자와 동일한지 여부를 반환합니다.
 	Equal(Signer) bool
 }
 
 type cancunSigner struct{ londonSigner }
 
-// NewCancunSigner returns a signer that accepts
+// NewCancunSigner는 다음을 허용하는 서명자를 반환합니다.
 // - EIP-4844 blob transactions
 // - EIP-1559 dynamic fee transactions
 // - EIP-2930 access list transactions,
-// - EIP-155 replay protected transactions, and
-// - legacy Homestead transactions.
+// - EIP-155 replay protected transactions, 그리고
+// - legacy Homestead transactions. (모든 유형의 트랜잭션을 지원합니다.)
 func NewCancunSigner(chainId *big.Int) Signer {
 	return cancunSigner{londonSigner{eip2930Signer{NewEIP155Signer(chainId)}}}
 }
 
 func (s cancunSigner) Sender(tx *Transaction) (common.Address, error) {
-	if tx.Type() != BlobTxType {
+	if tx.Type() != BlobTxType { // Blob 트랜잭션이 아닌 경우 -> London
 		return s.londonSigner.Sender(tx)
 	}
+	// Blob 트랜잭션인 경우
 	V, R, S := tx.RawSignatureValues()
-	// Blob txs are defined to use 0 and 1 as their recovery
-	// id, add 27 to become equivalent to unprotected Homestead signatures.
+	// Blob 트랜잭션은 복구 ID로 0과 1을 사용하도록 정의되어 있습니다.
+	// 27을 더하여 보호되지 않은 Homestead 서명과 동일하게 만듭니다.
 	V = new(big.Int).Add(V, big.NewInt(27))
 	if tx.ChainId().Cmp(s.chainId) != 0 {
 		return common.Address{}, fmt.Errorf("%w: have %d want %d", ErrInvalidChainId, tx.ChainId(), s.chainId)
@@ -207,12 +200,12 @@ func (s cancunSigner) Equal(s2 Signer) bool {
 }
 
 func (s cancunSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
-	txdata, ok := tx.inner.(*BlobTx)
+	txdata, ok := tx.inner.(*BlobTx) // Blob 트랜잭션이 아닌 경우 -> London
 	if !ok {
 		return s.londonSigner.SignatureValues(tx, sig)
 	}
-	// Check that chain ID of tx matches the signer. We also accept ID zero here,
-	// because it indicates that the chain ID was not specified in the tx.
+	// txdata의 체인 ID는 0이 아니어야 하며, 서명자의 체인 ID와 일치해야 합니다.
+	// txdata의 체인 ID가 0이라는 것은 tx에서 체인 ID가 지정되지 않았음을 의미합니다.
 	if txdata.ChainID.Sign() != 0 && txdata.ChainID.ToBig().Cmp(s.chainId) != 0 {
 		return nil, nil, nil, fmt.Errorf("%w: have %d want %d", ErrInvalidChainId, txdata.ChainID, s.chainId)
 	}
@@ -221,8 +214,8 @@ func (s cancunSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big
 	return R, S, V, nil
 }
 
-// Hash returns the hash to be signed by the sender.
-// It does not uniquely identify the transaction.
+// Hash는 발신자에 의해 서명될 해시를 반환합니다.
+// 이는 트랜잭션을 고유하게 식별하지는 않습니다.
 func (s cancunSigner) Hash(tx *Transaction) common.Hash {
 	if tx.Type() != BlobTxType {
 		return s.londonSigner.Hash(tx)
@@ -246,22 +239,23 @@ func (s cancunSigner) Hash(tx *Transaction) common.Hash {
 
 type londonSigner struct{ eip2930Signer }
 
-// NewLondonSigner returns a signer that accepts
+// NewLondonSigner는 다음을 허용하는 서명자를 반환합니다.
 // - EIP-1559 dynamic fee transactions
 // - EIP-2930 access list transactions,
-// - EIP-155 replay protected transactions, and
-// - legacy Homestead transactions.
+// - EIP-155 replay protected transactions, 그리고
+// - legacy Homestead transactions. (EIP-4844 blob transactions은 지원하지 않습니다.)
 func NewLondonSigner(chainId *big.Int) Signer {
 	return londonSigner{eip2930Signer{NewEIP155Signer(chainId)}}
 }
 
 func (s londonSigner) Sender(tx *Transaction) (common.Address, error) {
-	if tx.Type() != DynamicFeeTxType {
+	if tx.Type() != DynamicFeeTxType { // DynamicFee 트랜잭션이 아닌 경우 -> EIP-2930
 		return s.eip2930Signer.Sender(tx)
 	}
+	// DynamicFee 트랜잭션인 경우
 	V, R, S := tx.RawSignatureValues()
-	// DynamicFee txs are defined to use 0 and 1 as their recovery
-	// id, add 27 to become equivalent to unprotected Homestead signatures.
+	// DynamicFee txs는 복구 ID로 0과 1을 사용하도록 정의되어 있습니다.
+	// 27을 더하여 보호되지 않은 Homestead 서명과 동일하게 만듭니다.
 	V = new(big.Int).Add(V, big.NewInt(27))
 	if tx.ChainId().Cmp(s.chainId) != 0 {
 		return common.Address{}, fmt.Errorf("%w: have %d want %d", ErrInvalidChainId, tx.ChainId(), s.chainId)
@@ -279,8 +273,8 @@ func (s londonSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big
 	if !ok {
 		return s.eip2930Signer.SignatureValues(tx, sig)
 	}
-	// Check that chain ID of tx matches the signer. We also accept ID zero here,
-	// because it indicates that the chain ID was not specified in the tx.
+	// txdata의 체인 ID는 0이 아니어야 하며, 서명자의 체인 ID와 일치해야 합니다.
+	// txdata의 체인 ID가 0이라는 것은 tx에서 체인 ID가 지정되지 않았음을 의미합니다.
 	if txdata.ChainID.Sign() != 0 && txdata.ChainID.Cmp(s.chainId) != 0 {
 		return nil, nil, nil, fmt.Errorf("%w: have %d want %d", ErrInvalidChainId, txdata.ChainID, s.chainId)
 	}
@@ -289,8 +283,8 @@ func (s londonSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big
 	return R, S, V, nil
 }
 
-// Hash returns the hash to be signed by the sender.
-// It does not uniquely identify the transaction.
+// Hash는 발신자에 의해 서명될 해시를 반환합니다.
+// 이는 트랜잭션을 고유하게 식별하지는 않습니다.
 func (s londonSigner) Hash(tx *Transaction) common.Hash {
 	if tx.Type() != DynamicFeeTxType {
 		return s.eip2930Signer.Hash(tx)
@@ -312,8 +306,8 @@ func (s londonSigner) Hash(tx *Transaction) common.Hash {
 
 type eip2930Signer struct{ EIP155Signer }
 
-// NewEIP2930Signer returns a signer that accepts EIP-2930 access list transactions,
-// EIP-155 replay protected transactions, and legacy Homestead transactions.
+// NewEIP2930Signer는 EIP-2930 액세스 목록 트랜잭션, EIP-155 재생 방지 트랜잭션 및
+// 레거시 Homestead 트랜잭션을 허용하는 서명자를 반환합니다.
 func NewEIP2930Signer(chainId *big.Int) Signer {
 	return eip2930Signer{NewEIP155Signer(chainId)}
 }
@@ -330,11 +324,11 @@ func (s eip2930Signer) Equal(s2 Signer) bool {
 func (s eip2930Signer) Sender(tx *Transaction) (common.Address, error) {
 	V, R, S := tx.RawSignatureValues()
 	switch tx.Type() {
-	case LegacyTxType:
-		return s.EIP155Signer.Sender(tx)
+	case LegacyTxType: // Legacy 트랜잭션인 경우
+		return s.EIP155Signer.Sender(tx) // EIP-155
 	case AccessListTxType:
-		// AL txs are defined to use 0 and 1 as their recovery
-		// id, add 27 to become equivalent to unprotected Homestead signatures.
+		// 접근 목록 트랜잭션은 복구 ID로 0과 1을 사용하도록 정의되어 있습니다.
+		// 27을 더하여 보호되지 않은 Homestead 서명과 동일하게 만듭니다.
 		V = new(big.Int).Add(V, big.NewInt(27))
 	default:
 		return common.Address{}, ErrTxTypeNotSupported
@@ -347,11 +341,11 @@ func (s eip2930Signer) Sender(tx *Transaction) (common.Address, error) {
 
 func (s eip2930Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
 	switch txdata := tx.inner.(type) {
-	case *LegacyTx:
-		return s.EIP155Signer.SignatureValues(tx, sig)
-	case *AccessListTx:
-		// Check that chain ID of tx matches the signer. We also accept ID zero here,
-		// because it indicates that the chain ID was not specified in the tx.
+	case *LegacyTx: // Legacy 트랜잭션인 경우
+		return s.EIP155Signer.SignatureValues(tx, sig) // EIP-155
+	case *AccessListTx: // 접근 목록 트랜잭션인 경우
+		// txdata의 체인 ID는 0이 아니어야 하며, 서명자의 체인 ID와 일치해야 합니다.
+		// txdata의 체인 ID가 0이라는 것은 tx에서 체인 ID가 지정되지 않았음을 의미합니다.
 		if txdata.ChainID.Sign() != 0 && txdata.ChainID.Cmp(s.chainId) != 0 {
 			return nil, nil, nil, fmt.Errorf("%w: have %d want %d", ErrInvalidChainId, txdata.ChainID, s.chainId)
 		}
@@ -363,13 +357,13 @@ func (s eip2930Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *bi
 	return R, S, V, nil
 }
 
-// Hash returns the hash to be signed by the sender.
-// It does not uniquely identify the transaction.
+// Hash는 발신자에 의해 서명될 해시를 반환합니다.
+// 이는 트랜잭션을 고유하게 식별하지는 않습니다.
 func (s eip2930Signer) Hash(tx *Transaction) common.Hash {
 	switch tx.Type() {
-	case LegacyTxType:
+	case LegacyTxType: // Legacy 트랜잭션인 경우
 		return s.EIP155Signer.Hash(tx)
-	case AccessListTxType:
+	case AccessListTxType: // 접근 목록 트랜잭션인 경우
 		return prefixedRlpHash(
 			tx.Type(),
 			[]interface{}{
@@ -383,16 +377,14 @@ func (s eip2930Signer) Hash(tx *Transaction) common.Hash {
 				tx.AccessList(),
 			})
 	default:
-		// This _should_ not happen, but in case someone sends in a bad
-		// json struct via RPC, it's probably more prudent to return an
-		// empty hash instead of killing the node with a panic
-		//panic("Unsupported transaction type: %d", tx.typ)
+		// 어떤 타입과도 일치하지 않는 경우, 빈 해시를 반환합니다.
+		// 이러한 경우는 어떤 경우에도 발생하지 않아야 하지만, 아마도 누군가가 RPC를 통해 잘못된 json 구조를 보내는 경우가 있을 수 있으므로
+		// 노드를 패닉으로 죽이는 대신 빈 해시를 반환하는 것이 더 조심스러울 것입니다.
 		return common.Hash{}
 	}
 }
 
-// EIP155Signer implements Signer using the EIP-155 rules. This accepts transactions which
-// are replay-protected as well as unprotected homestead transactions.
+// EIP155Signer는 EIP-155 규칙을 사용하여 서명자를 구현합니다. 이는 재생 방지 트랜잭션과 보호되지 않은 Homestead 트랜잭션을 모두 허용합니다.
 type EIP155Signer struct {
 	chainId, chainIdMul *big.Int
 }
@@ -434,8 +426,7 @@ func (s EIP155Signer) Sender(tx *Transaction) (common.Address, error) {
 	return recoverPlain(s.Hash(tx), R, S, V, true)
 }
 
-// SignatureValues returns signature values. This signature
-// needs to be in the [R || S || V] format where V is 0 or 1.
+// SignatureValues는 서명 값을 반환합니다. 이 서명은 V가 0 또는 1인 [R || S || V] 형식이어야 합니다.
 func (s EIP155Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
 	if tx.Type() != LegacyTxType {
 		return nil, nil, nil, ErrTxTypeNotSupported
@@ -448,8 +439,8 @@ func (s EIP155Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big
 	return R, S, V, nil
 }
 
-// Hash returns the hash to be signed by the sender.
-// It does not uniquely identify the transaction.
+// Hash는 발신자에 의해 서명될 해시를 반환합니다.
+// 이는 트랜잭션을 고유하게 식별하지는 않습니다.
 func (s EIP155Signer) Hash(tx *Transaction) common.Hash {
 	return rlpHash([]interface{}{
 		tx.Nonce(),
@@ -462,8 +453,7 @@ func (s EIP155Signer) Hash(tx *Transaction) common.Hash {
 	})
 }
 
-// HomesteadSigner implements Signer interface using the
-// homestead rules.
+// HomesteadSigner는 Homestead 규칙을 사용하여 서명자를 구현합니다.
 type HomesteadSigner struct{ FrontierSigner }
 
 func (s HomesteadSigner) ChainID() *big.Int {
@@ -475,8 +465,7 @@ func (s HomesteadSigner) Equal(s2 Signer) bool {
 	return ok
 }
 
-// SignatureValues returns signature values. This signature
-// needs to be in the [R || S || V] format where V is 0 or 1.
+// SignatureValues는 서명 값을 반환합니다. 이 서명은 V가 0 또는 1인 [R || S || V] 형식이어야 합니다.
 func (hs HomesteadSigner) SignatureValues(tx *Transaction, sig []byte) (r, s, v *big.Int, err error) {
 	return hs.FrontierSigner.SignatureValues(tx, sig)
 }
@@ -489,8 +478,7 @@ func (hs HomesteadSigner) Sender(tx *Transaction) (common.Address, error) {
 	return recoverPlain(hs.Hash(tx), r, s, v, true)
 }
 
-// FrontierSigner implements Signer interface using the
-// frontier rules.
+// FrontierSigner는 프론티어 규칙을 사용하여 서명자를 구현합니다.
 type FrontierSigner struct{}
 
 func (s FrontierSigner) ChainID() *big.Int {
@@ -510,8 +498,7 @@ func (fs FrontierSigner) Sender(tx *Transaction) (common.Address, error) {
 	return recoverPlain(fs.Hash(tx), r, s, v, false)
 }
 
-// SignatureValues returns signature values. This signature
-// needs to be in the [R || S || V] format where V is 0 or 1.
+// SignatureValues는 서명 값을 반환합니다. 이 서명은 V가 0 또는 1인 [R || S || V] 형식이어야 합니다.
 func (fs FrontierSigner) SignatureValues(tx *Transaction, sig []byte) (r, s, v *big.Int, err error) {
 	if tx.Type() != LegacyTxType {
 		return nil, nil, nil, ErrTxTypeNotSupported
@@ -520,8 +507,8 @@ func (fs FrontierSigner) SignatureValues(tx *Transaction, sig []byte) (r, s, v *
 	return r, s, v, nil
 }
 
-// Hash returns the hash to be signed by the sender.
-// It does not uniquely identify the transaction.
+// Hash는 발신자에 의해 서명될 해시를 반환합니다.
+// 이는 트랜잭션을 고유하게 식별하지는 않습니다.
 func (fs FrontierSigner) Hash(tx *Transaction) common.Hash {
 	return rlpHash([]interface{}{
 		tx.Nonce(),
@@ -551,13 +538,13 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 	if !crypto.ValidateSignatureValues(V, R, S, homestead) {
 		return common.Address{}, ErrInvalidSig
 	}
-	// encode the signature in uncompressed format
+	// 비압축 형식으로 서명을 인코딩합니다.
 	r, s := R.Bytes(), S.Bytes()
 	sig := make([]byte, crypto.SignatureLength)
 	copy(sig[32-len(r):32], r)
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
-	// recover the public key from the signature
+	// 서명으로부터 공개 키를 복구합니다.
 	pub, err := crypto.Ecrecover(sighash[:], sig)
 	if err != nil {
 		return common.Address{}, err
@@ -570,7 +557,7 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 	return addr, nil
 }
 
-// deriveChainId derives the chain id from the given v parameter
+// deriveChainId는 주어진 v 매개변수에서 체인 ID를 추출합니다.
 func deriveChainId(v *big.Int) *big.Int {
 	if v.BitLen() <= 64 {
 		v := v.Uint64()

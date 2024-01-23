@@ -3,4 +3,4 @@ authors = ["piatoss"]
 language = "ko"
 multilingual = false
 src = "src"
-title = "go-ethereum 박살내기"
+title = "go-ethereum breakdown"

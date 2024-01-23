@@ -26,7 +26,7 @@ import (
 	"github.com/holiman/uint256"
 )
 
-// txJSON is the JSON representation of transactions.
+// txJSON은 트랜잭션의 JSON 표현입니다.
 type txJSON struct {
 	Type hexutil.Uint64 `json:"type"`
 
@@ -47,12 +47,12 @@ type txJSON struct {
 	S                    *hexutil.Big    `json:"s"`
 	YParity              *hexutil.Uint64 `json:"yParity,omitempty"`
 
-	// Only used for encoding:
+	// 인코딩에만 사용됩니다.
 	Hash common.Hash `json:"hash"`
 }
 
-// yParityValue returns the YParity value from JSON. For backwards-compatibility reasons,
-// this can be given in the 'v' field or the 'yParity' field. If both exist, they must match.
+// yParityValue는 JSON에서 YParity 값을 반환합니다.
+// 하위 호환성을 위해 'v' 필드 또는 'yParity' 필드에 지정할 수 있습니다. 둘 다 존재하는 경우 동일해야 합니다.
 func (tx *txJSON) yParityValue() (*big.Int, error) {
 	if tx.YParity != nil {
 		val := uint64(*tx.YParity)
@@ -71,14 +71,14 @@ func (tx *txJSON) yParityValue() (*big.Int, error) {
 	return nil, errVYParityMissing
 }
 
-// MarshalJSON marshals as JSON with a hash.
+// MarshalJSON은 해시와 함께 JSON으로 마샬링합니다.
 func (tx *Transaction) MarshalJSON() ([]byte, error) {
 	var enc txJSON
-	// These are set for all tx types.
+	// 이하의 필드는 모든 tx 유형에 대해 설정됩니다.
 	enc.Hash = tx.Hash()
 	enc.Type = hexutil.Uint64(tx.Type())
 
-	// Other fields are set conditionally depending on tx type.
+	// 다른 필드는 tx 유형에 따라 조건적으로 설정됩니다.
 	switch itx := tx.inner.(type) {
 	case *LegacyTx:
 		enc.Nonce = (*hexutil.Uint64)(&itx.Nonce)
@@ -146,7 +146,7 @@ func (tx *Transaction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&enc)
 }
 
-// UnmarshalJSON unmarshals from JSON.
+// UnmarshalJSON은 JSON으로부터 Transaction을 언마샬링합니다.
 func (tx *Transaction) UnmarshalJSON(input []byte) error {
 	var dec txJSON
 	err := json.Unmarshal(input, &dec)
@@ -154,7 +154,7 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 		return err
 	}
 
-	// Decode / verify fields according to transaction type.
+	// 트랜잭션 유형에 따라 다르게 필드를 디코딩하고 검증합니다.
 	var inner TxData
 	switch dec.Type {
 	case LegacyTxType:
@@ -402,7 +402,7 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 		return ErrTxTypeNotSupported
 	}
 
-	// Now set the inner transaction.
+	// innerTx를 설정합니다.
 	tx.setDecoded(inner, 0)
 
 	// TODO: check hash here?

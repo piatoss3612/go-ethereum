@@ -26,16 +26,16 @@ import (
 
 //go:generate go run ../../rlp/rlpgen -type StateAccount -out gen_account_rlp.go
 
-// StateAccount is the Ethereum consensus representation of accounts.
-// These objects are stored in the main account trie.
+// StateAccount는 이더리움 컨센서스 계정입니다.
+// 이 객체들은 메인 계정 트라이에 저장됩니다.
 type StateAccount struct {
-	Nonce    uint64
-	Balance  *big.Int
-	Root     common.Hash // merkle root of the storage trie
-	CodeHash []byte
+	Nonce    uint64      // 계정의 nonce
+	Balance  *big.Int    // 계정의 잔액
+	Root     common.Hash // 스토리지 트라이의 머클루트
+	CodeHash []byte      // EVM 코드 해시 (Externally Owned Account는 nil)
 }
 
-// NewEmptyStateAccount constructs an empty state account.
+// NewEmptyStateAccount는 빈 상태 계정을 구성합니다.
 func NewEmptyStateAccount() *StateAccount {
 	return &StateAccount{
 		Balance:  new(big.Int),
@@ -44,7 +44,7 @@ func NewEmptyStateAccount() *StateAccount {
 	}
 }
 
-// Copy returns a deep-copied state account object.
+// Copy는 상태 계정 객체의 깊은 복사본을 반환합니다.
 func (acct *StateAccount) Copy() *StateAccount {
 	var balance *big.Int
 	if acct.Balance != nil {
@@ -58,17 +58,16 @@ func (acct *StateAccount) Copy() *StateAccount {
 	}
 }
 
-// SlimAccount is a modified version of an Account, where the root is replaced
-// with a byte slice. This format can be used to represent full-consensus format
-// or slim format which replaces the empty root and code hash as nil byte slice.
+// SlimAccount는 상태 트라이의 머클루트가 바이트 슬라이스로 대체된 버전입니다.
+// 이 형식은 빈 루트와 코드 해시를 nil 바이트 슬라이스로 대체하는 슬림 형식 또는 전체 컨센서스 형식을 나타낼 수 있습니다.
 type SlimAccount struct {
 	Nonce    uint64
 	Balance  *big.Int
-	Root     []byte // Nil if root equals to types.EmptyRootHash
-	CodeHash []byte // Nil if hash equals to types.EmptyCodeHash
+	Root     []byte // 루트가 types.EmptyRootHash와 같으면 Nil
+	CodeHash []byte // 해시가 types.EmptyCodeHash와 같으면 Nil
 }
 
-// SlimAccountRLP encodes the state account in 'slim RLP' format.
+// SlimAccountRLP는 상태 계정을 'slim RLP' 형식으로 인코딩합니다.
 func SlimAccountRLP(account StateAccount) []byte {
 	slim := SlimAccount{
 		Nonce:   account.Nonce,
@@ -87,8 +86,7 @@ func SlimAccountRLP(account StateAccount) []byte {
 	return data
 }
 
-// FullAccount decodes the data on the 'slim RLP' format and returns
-// the consensus format account.
+// FullAccount는 'slim RLP' 형식의 데이터를 디코딩하고 컨센서스 형식 계정을 반환합니다.
 func FullAccount(data []byte) (*StateAccount, error) {
 	var slim SlimAccount
 	if err := rlp.DecodeBytes(data, &slim); err != nil {
@@ -111,7 +109,7 @@ func FullAccount(data []byte) (*StateAccount, error) {
 	return &account, nil
 }
 
-// FullAccountRLP converts data on the 'slim RLP' format into the full RLP-format.
+// FullAccountRLP는 'slim RLP' 형식의 데이터를 full RLP 형식으로 변환합니다.
 func FullAccountRLP(data []byte) ([]byte, error) {
 	account, err := FullAccount(data)
 	if err != nil {

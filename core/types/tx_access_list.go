@@ -26,16 +26,16 @@ import (
 
 //go:generate go run github.com/fjl/gencodec -type AccessTuple -out gen_access_tuple.go
 
-// AccessList is an EIP-2930 access list.
+// AccessList은 EIP-2930에 정의된 접근 목록입니다.
 type AccessList []AccessTuple
 
-// AccessTuple is the element type of an access list.
+// AccessTuple은 접근 목록의 요소입니다.
 type AccessTuple struct {
 	Address     common.Address `json:"address"     gencodec:"required"`
 	StorageKeys []common.Hash  `json:"storageKeys" gencodec:"required"`
 }
 
-// StorageKeys returns the total number of storage keys in the access list.
+// StorageKeys는 접근 목록에 포함된 스토리지 키의 총 개수를 반환합니다.
 func (al AccessList) StorageKeys() int {
 	sum := 0
 	for _, tuple := range al {
@@ -44,27 +44,27 @@ func (al AccessList) StorageKeys() int {
 	return sum
 }
 
-// AccessListTx is the data of EIP-2930 access list transactions.
+// AccessListTx는 EIP-2930 접근 목록 트랜잭션의 데이터입니다.
 type AccessListTx struct {
-	ChainID    *big.Int        // destination chain ID
-	Nonce      uint64          // nonce of sender account
-	GasPrice   *big.Int        // wei per gas
-	Gas        uint64          // gas limit
-	To         *common.Address `rlp:"nil"` // nil means contract creation
-	Value      *big.Int        // wei amount
-	Data       []byte          // contract invocation input data
-	AccessList AccessList      // EIP-2930 access list
-	V, R, S    *big.Int        // signature values
+	ChainID    *big.Int        // 대상 체인 ID
+	Nonce      uint64          // 발신자 계정의 nonce
+	GasPrice   *big.Int        // 가스당 wei
+	Gas        uint64          // 가스 한도
+	To         *common.Address `rlp:"nil"` // 수신자의 주소. nil이면 컨트랙트 생성 트랜잭션
+	Value      *big.Int        // wei 단위의 이더량
+	Data       []byte          // 컨트랙트 생성 트랜잭션의 경우 생성자의 바이트코드. 그 외의 경우 호출 데이터
+	AccessList AccessList      // 접근 목록
+	V, R, S    *big.Int        // 서명 값
 }
 
-// copy creates a deep copy of the transaction data and initializes all fields.
+// copy는 트랜잭션 데이터의 깊은 복사본을 생성하여 반환합니다.
 func (tx *AccessListTx) copy() TxData {
 	cpy := &AccessListTx{
 		Nonce: tx.Nonce,
 		To:    copyAddressPtr(tx.To),
 		Data:  common.CopyBytes(tx.Data),
 		Gas:   tx.Gas,
-		// These are copied below.
+		// 이하의 값들은 아래에서 복사됩니다.
 		AccessList: make(AccessList, len(tx.AccessList)),
 		Value:      new(big.Int),
 		ChainID:    new(big.Int),
@@ -95,7 +95,7 @@ func (tx *AccessListTx) copy() TxData {
 	return cpy
 }
 
-// accessors for innerTx.
+// innerTx에 대한 접근자
 func (tx *AccessListTx) txType() byte           { return AccessListTxType }
 func (tx *AccessListTx) chainID() *big.Int      { return tx.ChainID }
 func (tx *AccessListTx) accessList() AccessList { return tx.AccessList }
