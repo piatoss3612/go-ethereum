@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package types contains data types related to Ethereum consensus.
+// types 패키지는 이더리움 consensus와 관련된 데이터 타입을 포함한다.
 package types
 
 import (
@@ -31,29 +31,27 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
-// A BlockNonce is a 64-bit hash which proves (combined with the
-// mix-hash) that a sufficient amount of computation has been carried
-// out on a block.
+// BlockNonce는 64비트 해시로, (mixHash와 결합하여) 블록에서 충분한 계산이 수행되었음을 증명합니다.
 type BlockNonce [8]byte
 
-// EncodeNonce converts the given integer to a block nonce.
+// EncodeNonce는 주어진 정수를 블록 nonce로 변환합니다. (빅 엔디안)
 func EncodeNonce(i uint64) BlockNonce {
 	var n BlockNonce
 	binary.BigEndian.PutUint64(n[:], i)
 	return n
 }
 
-// Uint64 returns the integer value of a block nonce.
+// Uint64는 블록 nonce의 정수 값을 반환합니다. (빅 엔디안)
 func (n BlockNonce) Uint64() uint64 {
 	return binary.BigEndian.Uint64(n[:])
 }
 
-// MarshalText encodes n as a hex string with 0x prefix.
+// MarshalText는 0x 접두사가 있는 16진수 문자열로 n을 인코딩합니다.
 func (n BlockNonce) MarshalText() ([]byte, error) {
 	return hexutil.Bytes(n[:]).MarshalText()
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler.
+// UnmarshalText는 16진수 문자열로부터 n을 디코딩합니다.
 func (n *BlockNonce) UnmarshalText(input []byte) error {
 	return hexutil.UnmarshalFixedText("BlockNonce", input, n[:])
 }
@@ -61,7 +59,7 @@ func (n *BlockNonce) UnmarshalText(input []byte) error {
 //go:generate go run github.com/fjl/gencodec -type Header -field-override headerMarshaling -out gen_header_json.go
 //go:generate go run ../../rlp/rlpgen -type Header -out gen_header_rlp.go
 
-// Header represents a block header in the Ethereum blockchain.
+// Header는 이더리움 블록체인의 블록 헤더를 나타냅니다.
 type Header struct {
 	ParentHash  common.Hash    `json:"parentHash"       gencodec:"required"`
 	UncleHash   common.Hash    `json:"sha3Uncles"       gencodec:"required"`
@@ -79,23 +77,23 @@ type Header struct {
 	MixDigest   common.Hash    `json:"mixHash"`
 	Nonce       BlockNonce     `json:"nonce"`
 
-	// BaseFee was added by EIP-1559 and is ignored in legacy headers.
+	// BaseFee는 EIP-1559에 의해 추가되었으며, 레거시 헤더에서는 무시됩니다.
 	BaseFee *big.Int `json:"baseFeePerGas" rlp:"optional"`
 
-	// WithdrawalsHash was added by EIP-4895 and is ignored in legacy headers.
+	// WithdrawalsHash는 EIP-4895에 의해 추가되었으며, 레거시 헤더에서는 무시됩니다.
 	WithdrawalsHash *common.Hash `json:"withdrawalsRoot" rlp:"optional"`
 
-	// BlobGasUsed was added by EIP-4844 and is ignored in legacy headers.
+	// BlobGasUsed는 EIP-4844에 의해 추가되었으며, 레거시 헤더에서는 무시됩니다.
 	BlobGasUsed *uint64 `json:"blobGasUsed" rlp:"optional"`
 
-	// ExcessBlobGas was added by EIP-4844 and is ignored in legacy headers.
+	// ExcessBlobGas는 EIP-4844에 의해 추가되었으며, 레거시 헤더에서는 무시됩니다.
 	ExcessBlobGas *uint64 `json:"excessBlobGas" rlp:"optional"`
 
-	// ParentBeaconRoot was added by EIP-4788 and is ignored in legacy headers.
+	// ParentBeaconRoot는 EIP-4788에 의해 추가되었으며, 레거시 헤더에서는 무시됩니다.
 	ParentBeaconRoot *common.Hash `json:"parentBeaconBlockRoot" rlp:"optional"`
 }
 
-// field type overrides for gencodec
+// gencodoc을 사용하기 위해 필드 타입을 재정의합니다.
 type headerMarshaling struct {
 	Difficulty    *hexutil.Big
 	Number        *hexutil.Big
@@ -104,21 +102,20 @@ type headerMarshaling struct {
 	Time          hexutil.Uint64
 	Extra         hexutil.Bytes
 	BaseFee       *hexutil.Big
-	Hash          common.Hash `json:"hash"` // adds call to Hash() in MarshalJSON
+	Hash          common.Hash `json:"hash"` // MarshalJSON에서 Hash() 호출을 추가합니다.
 	BlobGasUsed   *hexutil.Uint64
 	ExcessBlobGas *hexutil.Uint64
 }
 
-// Hash returns the block hash of the header, which is simply the keccak256 hash of its
-// RLP encoding.
+// Hash는 헤더의 블록 해시를 반환합니다. 이는 단순히 RLP 인코딩 결과의 keccak256 해시입니다.
 func (h *Header) Hash() common.Hash {
 	return rlpHash(h)
 }
 
 var headerSize = common.StorageSize(reflect.TypeOf(Header{}).Size())
 
-// Size returns the approximate memory used by all internal contents. It is used
-// to approximate and limit the memory consumption of various caches.
+// Size는 모든 내부 컨텐츠에 의해 사용되는 근사 메모리 크기를 반환합니다.
+// 이는 다양한 캐시의 메모리 소비를 근사화하고 제한하는 데 사용됩니다.
 func (h *Header) Size() common.StorageSize {
 	var baseFeeBits int
 	if h.BaseFee != nil {
@@ -127,10 +124,9 @@ func (h *Header) Size() common.StorageSize {
 	return headerSize + common.StorageSize(len(h.Extra)+(h.Difficulty.BitLen()+h.Number.BitLen()+baseFeeBits)/8)
 }
 
-// SanityCheck checks a few basic things -- these checks are way beyond what
-// any 'sane' production values should hold, and can mainly be used to prevent
-// that the unbounded fields are stuffed with junk data to add processing
-// overhead
+// SanityCheck는 몇 가지 기본적인 것들을 확인합니다.
+// 이러한 체크는 '정상적인' 프로덕션 값을 체크한다기 보다는, 주로 범위가 정해지지 않은 필드(big.Int 등)가
+// 처리 오버헤드를 추가하기 위해 정크 데이터로 채워지는 것을 방지하는 데 사용됩니다.
 func (h *Header) SanityCheck() error {
 	if h.Number != nil && !h.Number.IsUint64() {
 		return fmt.Errorf("too large block number: bitlen %d", h.Number.BitLen())
@@ -151,8 +147,8 @@ func (h *Header) SanityCheck() error {
 	return nil
 }
 
-// EmptyBody returns true if there is no additional 'body' to complete the header
-// that is: no transactions, no uncles and no withdrawals.
+// EmptyBody는 헤더를 완성하는 추가적인 'body'가 없는 경우 true를 반환합니다.
+// 즉, 트랜잭션이 없고, 엉클도 없고, 출금도 없습니다.
 func (h *Header) EmptyBody() bool {
 	if h.WithdrawalsHash != nil {
 		return h.TxHash == EmptyTxsHash && *h.WithdrawalsHash == EmptyWithdrawalsHash
@@ -160,53 +156,48 @@ func (h *Header) EmptyBody() bool {
 	return h.TxHash == EmptyTxsHash && h.UncleHash == EmptyUncleHash
 }
 
-// EmptyReceipts returns true if there are no receipts for this header/block.
+// EmptyReceipts는 이 헤더/블록에 영수증이 없는 경우 true를 반환합니다.
 func (h *Header) EmptyReceipts() bool {
 	return h.ReceiptHash == EmptyReceiptsHash
 }
 
-// Body is a simple (mutable, non-safe) data container for storing and moving
-// a block's data contents (transactions and uncles) together.
+// Body는 블록의 데이터 컨텐츠(트랜잭션과 엉클)를 함께 저장하고
+// 이동시키기 위한 간단한(가변, 비안전) 데이터 컨테이너입니다.
 type Body struct {
 	Transactions []*Transaction
 	Uncles       []*Header
 	Withdrawals  []*Withdrawal `rlp:"optional"`
 }
 
-// Block represents an Ethereum block.
+// Block은 이더리움 블록을 나타냅니다.
 //
-// Note the Block type tries to be 'immutable', and contains certain caches that rely
-// on that. The rules around block immutability are as follows:
+// Block 타입은 '불변'이 되려고 하며, 이를 위해 특정 캐시를 포함합니다.
+// 블록 불변성에 대한 규칙은 다음과 같습니다.
 //
-//   - We copy all data when the block is constructed. This makes references held inside
-//     the block independent of whatever value was passed in.
+//   - 블록이 생성될 때 모든 파라미터를 복사하여 블록을 생성합니다. 이는 파라미터로부터 블록을 독립적으로 만듭니다.
 //
-//   - We copy all header data on access. This is because any change to the header would mess
-//     up the cached hash and size values in the block. Calling code is expected to take
-//     advantage of this to avoid over-allocating!
+//   - 헤더 데이터는 전부 복사하여 사용합니다. 헤더에 대한 변경 사항은 블록의 캐시된 hash와 size를 완전히 망가뜨릴 수 있습니다.
 //
-//   - When new body data is attached to the block, a shallow copy of the block is returned.
-//     This ensures block modifications are race-free.
+//   - 새로운 body 데이터가 블록에 첨부되면, 블록의 얕은 복사본이 반환됩니다.
+//     이는 블록 수정이 경쟁 조건 없이 이루어지도록 보장합니다.
 //
-//   - We do not copy body data on access because it does not affect the caches, and also
-//     because it would be too expensive.
+//   - 블록의 body 데이터에 대해서는 복사하지 않습니다. 왜냐하면 이는 캐시에 영향을 주지 않을 뿐만 아니라, 너무 비싸기 때문입니다.
 type Block struct {
 	header       *Header
 	uncles       []*Header
 	transactions Transactions
 	withdrawals  Withdrawals
 
-	// caches
+	// 캐시
 	hash atomic.Value
 	size atomic.Value
 
-	// These fields are used by package eth to track
-	// inter-peer block relay.
+	// eth 패키지에서 사용되는 필드로, 피어 간 블록 릴레이를 추적합니다.
 	ReceivedAt   time.Time
 	ReceivedFrom interface{}
 }
 
-// "external" block encoding. used for eth protocol, etc.
+// extblock은 블록의 외부 표현입니다. eth 프로토콜 등에서 사용됩니다.
 type extblock struct {
 	Header      *Header
 	Txs         []*Transaction
@@ -214,12 +205,9 @@ type extblock struct {
 	Withdrawals []*Withdrawal `rlp:"optional"`
 }
 
-// NewBlock creates a new block. The input data is copied, changes to header and to the
-// field values will not affect the block.
+// NewBlock은 새로운 블록을 생성합니다. 입력 데이터는 복사되므로, 입력 데이터의 변경은 블록에 영향을 주지 않습니다.
 //
-// The values of TxHash, UncleHash, ReceiptHash and Bloom in header
-// are ignored and set to values derived from the given txs, uncles
-// and receipts.
+// 헤더의 TxHash, UncleHash, ReceiptHash, Bloom 값은 입력된 txs, uncles, receipts로부터 유도되므로 생성 시에는 생략됩니다.
 func NewBlock(header *Header, txs []*Transaction, uncles []*Header, receipts []*Receipt, hasher TrieHasher) *Block {
 	b := &Block{header: CopyHeader(header)}
 
@@ -252,11 +240,9 @@ func NewBlock(header *Header, txs []*Transaction, uncles []*Header, receipts []*
 	return b
 }
 
-// NewBlockWithWithdrawals creates a new block with withdrawals. The input data is copied,
-// changes to header and to the field values will not affect the block.
+// NewBlockWithWithdrawals는 출금을 포함하는 새로운 블록을 생성합니다. 입력 데이터는 복사되므로, 입력 데이터의 변경은 블록에 영향을 주지 않습니다.
 //
-// The values of TxHash, UncleHash, ReceiptHash and Bloom in header are ignored and set to
-// values derived from the given txs, uncles and receipts.
+// 헤더의 TxHash, UncleHash, ReceiptHash, Bloom 값은 입력된 txs, uncles, receipts로부터 유도되므로 생성 시에는 생략됩니다.
 func NewBlockWithWithdrawals(header *Header, txs []*Transaction, uncles []*Header, receipts []*Receipt, withdrawals []*Withdrawal, hasher TrieHasher) *Block {
 	b := NewBlock(header, txs, uncles, receipts, hasher)
 
@@ -272,7 +258,7 @@ func NewBlockWithWithdrawals(header *Header, txs []*Transaction, uncles []*Heade
 	return b.WithWithdrawals(withdrawals)
 }
 
-// CopyHeader creates a deep copy of a block header.
+// CopyHeader는 블록 헤더의 깊은 복사본을 생성합니다.
 func CopyHeader(h *Header) *Header {
 	cpy := *h
 	if cpy.Difficulty = new(big.Int); h.Difficulty != nil {
@@ -307,7 +293,7 @@ func CopyHeader(h *Header) *Header {
 	return &cpy
 }
 
-// DecodeRLP decodes a block from RLP.
+// DecodeRLP은 RLP 형식으로부터 블록을 디코딩합니다.
 func (b *Block) DecodeRLP(s *rlp.Stream) error {
 	var eb extblock
 	_, size, _ := s.Kind()
@@ -319,7 +305,7 @@ func (b *Block) DecodeRLP(s *rlp.Stream) error {
 	return nil
 }
 
-// EncodeRLP serializes a block as RLP.
+// EncodeRLP은 블록을 RLP 형식으로 직렬화합니다.
 func (b *Block) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, &extblock{
 		Header:      b.header,
@@ -329,14 +315,13 @@ func (b *Block) EncodeRLP(w io.Writer) error {
 	})
 }
 
-// Body returns the non-header content of the block.
-// Note the returned data is not an independent copy.
+// Body는 블록의 헤더를 제외한 내용을 반환합니다.
+// 반환된 데이터는 독립적인 복사본이 아닙니다.
 func (b *Block) Body() *Body {
 	return &Body{b.transactions, b.uncles, b.withdrawals}
 }
 
-// Accessors for body data. These do not return a copy because the content
-// of the body slices does not affect the cached hash/size in block.
+// body 데이터에 대한 접근자. 해당 값들은 블록의 캐시된 hash/size에 영향을 주지 않기 때문에 복사본을 반환하지 않고 레퍼런스를 반환합니다.
 
 func (b *Block) Uncles() []*Header          { return b.uncles }
 func (b *Block) Transactions() Transactions { return b.transactions }
@@ -351,12 +336,12 @@ func (b *Block) Transaction(hash common.Hash) *Transaction {
 	return nil
 }
 
-// Header returns the block header (as a copy).
+// Header는 블록 헤더를 반환합니다. (복사본으로)
 func (b *Block) Header() *Header {
 	return CopyHeader(b.header)
 }
 
-// Header value accessors. These do copy!
+// 헤더 값에 대한 접근자. 이들은 복사본을 반환합니다!
 
 func (b *Block) Number() *big.Int     { return new(big.Int).Set(b.header.Number) }
 func (b *Block) GasLimit() uint64     { return b.header.GasLimit }
@@ -403,8 +388,8 @@ func (b *Block) BlobGasUsed() *uint64 {
 	return blobGasUsed
 }
 
-// Size returns the true RLP encoded storage size of the block, either by encoding
-// and returning it, or returning a previously cached value.
+// Size는 블록의 실제 RLP 인코딩된 크기를 반환합니다.
+// 캐시된 값이 있으면, 이를 반환하거나, 그렇지 않으면 인코딩하여 크기를 계산합니다.
 func (b *Block) Size() uint64 {
 	if size := b.size.Load(); size != nil {
 		return size.(uint64)
@@ -415,8 +400,7 @@ func (b *Block) Size() uint64 {
 	return uint64(c)
 }
 
-// SanityCheck can be used to prevent that unbounded fields are
-// stuffed with junk data to add processing overhead
+// SanityCheck는 범위가 정해지지 않은 필드가 처리 오버헤드를 추가하기 위해 정크 데이터로 채워지는 것을 방지하는 데 사용됩니다.
 func (b *Block) SanityCheck() error {
 	return b.header.SanityCheck()
 }
@@ -435,15 +419,12 @@ func CalcUncleHash(uncles []*Header) common.Hash {
 	return rlpHash(uncles)
 }
 
-// NewBlockWithHeader creates a block with the given header data. The
-// header data is copied, changes to header and to the field values
-// will not affect the block.
+// NewBlockWithHeader는 주어진 헤더 데이터로 블록을 생성합니다. 헤더 데이터는 복사되며, 입력된 헤더와 필드 값의 변경은 블록에 영향을 주지 않습니다.
 func NewBlockWithHeader(header *Header) *Block {
 	return &Block{header: CopyHeader(header)}
 }
 
-// WithSeal returns a new block with the data from b but the header replaced with
-// the sealed one.
+// WithSeal은 b의 데이터를 그대로 사용하지만, 헤더를 포장된(sealed) 헤더로 교체한 새로운 블록을 반환합니다.
 func (b *Block) WithSeal(header *Header) *Block {
 	return &Block{
 		header:       CopyHeader(header),
@@ -453,7 +434,7 @@ func (b *Block) WithSeal(header *Header) *Block {
 	}
 }
 
-// WithBody returns a copy of the block with the given transaction and uncle contents.
+// WithBody는 주어진 트랜잭션과 엉클 컨텐츠를 포함하는 블록의 복사본을 반환합니다.
 func (b *Block) WithBody(transactions []*Transaction, uncles []*Header) *Block {
 	block := &Block{
 		header:       b.header,
@@ -468,7 +449,7 @@ func (b *Block) WithBody(transactions []*Transaction, uncles []*Header) *Block {
 	return block
 }
 
-// WithWithdrawals returns a copy of the block containing the given withdrawals.
+// WithWithdrawals는 주어진 출금을 포함하는 블록의 복사본을 반환합니다.
 func (b *Block) WithWithdrawals(withdrawals []*Withdrawal) *Block {
 	block := &Block{
 		header:       b.header,
@@ -482,8 +463,8 @@ func (b *Block) WithWithdrawals(withdrawals []*Withdrawal) *Block {
 	return block
 }
 
-// Hash returns the keccak256 hash of b's header.
-// The hash is computed on the first call and cached thereafter.
+// Hash는 블록 헤더의 keccak256 해시를 반환합니다.
+// 해시는 첫 호출 시에 계산되고, 그 이후에는 캐시됩니다.
 func (b *Block) Hash() common.Hash {
 	if hash := b.hash.Load(); hash != nil {
 		return hash.(common.Hash)
@@ -495,10 +476,10 @@ func (b *Block) Hash() common.Hash {
 
 type Blocks []*Block
 
-// HeaderParentHashFromRLP returns the parentHash of an RLP-encoded
-// header. If 'header' is invalid, the zero hash is returned.
+// HeaderParentHashFromRLP는 RLP로 인코딩된 헤더의 parentHash를 반환합니다.
+// 'header'가 유효하지 않으면, zero hash가 반환됩니다.
 func HeaderParentHashFromRLP(header []byte) common.Hash {
-	// parentHash is the first list element.
+	// parentHash는 첫 번째 리스트 요소입니다.
 	listContent, _, err := rlp.SplitList(header)
 	if err != nil {
 		return common.Hash{}

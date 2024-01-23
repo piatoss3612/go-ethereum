@@ -10,3 +10,5 @@
     - [lru 패키지](./01.common/06.lru.md)
     - [math 패키지](./01.common/07.math.md)
     - [mclock 패키지](./01.common/08.mclock.md)
+- [core](./02.core/00.overview.md)
+    - [types 패키지](./02.core/01.types.md)
