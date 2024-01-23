@@ -42,38 +42,38 @@ var (
 	errVYParityMissing      = errors.New("missing 'yParity' or 'v' field in transaction")
 )
 
-// Transaction types.
+// 트랜잭션 타입
 const (
-	LegacyTxType     = 0x00
-	AccessListTxType = 0x01
-	DynamicFeeTxType = 0x02
-	BlobTxType       = 0x03
+	LegacyTxType     = 0x00 // Legacy
+	AccessListTxType = 0x01 // EIP-2930
+	DynamicFeeTxType = 0x02 // EIP-1559
+	BlobTxType       = 0x03 // EIP-4844
 )
 
-// Transaction is an Ethereum transaction.
+// Transaction은 이더리움 트랜잭션입니다.
 type Transaction struct {
-	inner TxData    // Consensus contents of a transaction
-	time  time.Time // Time first seen locally (spam avoidance)
+	inner TxData    // 트랜잭션의 핵심 내용
+	time  time.Time // 로컬에서 처음 확인한 시간 (스팸 방지)
 
-	// caches
+	// 캐시
 	hash atomic.Value
 	size atomic.Value
 	from atomic.Value
 }
 
-// NewTx creates a new transaction.
+// NewTx는 새 트랜잭션을 생성합니다.
 func NewTx(inner TxData) *Transaction {
 	tx := new(Transaction)
 	tx.setDecoded(inner.copy(), 0)
 	return tx
 }
 
-// TxData is the underlying data of a transaction.
+// TxData는 트랜잭션의 기본 데이터를 나타내기 위한 인터페이스입니다.
 //
-// This is implemented by DynamicFeeTx, LegacyTx and AccessListTx.
+// 이 인터페이스는 DynamicFeeTx, LegacyTx, AccessListTx에 의해 구현됩니다.
 type TxData interface {
-	txType() byte // returns the type ID
-	copy() TxData // creates a deep copy and initializes all fields
+	txType() byte // 트랜잭션 타입 ID를 반환합니다.
+	copy() TxData // 깊은 복사본을 만들어 새로운 TxData를 반환합니다.
 
 	chainID() *big.Int
 	accessList() AccessList
@@ -89,24 +89,23 @@ type TxData interface {
 	rawSignatureValues() (v, r, s *big.Int)
 	setSignatureValues(chainID, v, r, s *big.Int)
 
-	// effectiveGasPrice computes the gas price paid by the transaction, given
-	// the inclusion block baseFee.
+	// effectiveGasPrice는 트랜잭션이 지불하는 가스 가격을 계산합니다. 트랜잭션이 포함된 블록의 baseFee가 주어집니다.
 	//
-	// Unlike other TxData methods, the returned *big.Int should be an independent
-	// copy of the computed value, i.e. callers are allowed to mutate the result.
-	// Method implementations can use 'dst' to store the result.
+	// 다른 TxData 메서드와 달리, 반환된 *big.Int는 계산된 값의 독립적인 복사본이어야 합니다.
+	// 즉, 호출자는 결과를 변경할 수 있습니다. 메서드 구현은 'dst'를 사용하여 결과를 저장할 수도 있습니다.
 	effectiveGasPrice(dst *big.Int, baseFee *big.Int) *big.Int
 
 	encode(*bytes.Buffer) error
 	decode([]byte) error
 }
 
-// EncodeRLP implements rlp.Encoder
+// EncodeRLP은 rlp.Encoder를 구현합니다.
 func (tx *Transaction) EncodeRLP(w io.Writer) error {
 	if tx.Type() == LegacyTxType {
 		return rlp.Encode(w, tx.inner)
 	}
-	// It's an EIP-2718 typed TX envelope.
+
+	// 레거시 트랜잭션이 아니라면, EIP-2718 타입화된 트랜잭션입니다.
 	buf := encodeBufferPool.Get().(*bytes.Buffer)
 	defer encodeBufferPool.Put(buf)
 	buf.Reset()
@@ -116,15 +115,14 @@ func (tx *Transaction) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, buf.Bytes())
 }
 
-// encodeTyped writes the canonical encoding of a typed transaction to w.
+// encodeTyped는 w에 타입화된 트랜잭션의 정규 인코딩을 작성합니다.
 func (tx *Transaction) encodeTyped(w *bytes.Buffer) error {
 	w.WriteByte(tx.Type())
 	return tx.inner.encode(w)
 }
 
-// MarshalBinary returns the canonical encoding of the transaction.
-// For legacy transactions, it returns the RLP encoding. For EIP-2718 typed
-// transactions, it returns the type and payload.
+// MarshalBinary은 트랜잭션의 정규 인코딩을 반환합니다.
+// 레거시 트랜잭션의 경우 RLP 인코딩을 반환합니다. EIP-2718 타입화된 트랜잭션의 경우 타입과 페이로드를 반환합니다.
 func (tx *Transaction) MarshalBinary() ([]byte, error) {
 	if tx.Type() == LegacyTxType {
 		return rlp.EncodeToBytes(tx.inner)
@@ -134,14 +132,14 @@ func (tx *Transaction) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// DecodeRLP implements rlp.Decoder
+// DecodeRLP은 rlp.Decoder를 구현합니다.
 func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 	kind, size, err := s.Kind()
 	switch {
 	case err != nil:
 		return err
 	case kind == rlp.List:
-		// It's a legacy transaction.
+		// 레거시 트랜잭션을 디코딩합니다.
 		var inner LegacyTx
 		err := s.Decode(&inner)
 		if err == nil {
@@ -151,8 +149,8 @@ func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 	case kind == rlp.Byte:
 		return errShortTypedTx
 	default:
-		// It's an EIP-2718 typed TX envelope.
-		// First read the tx payload bytes into a temporary buffer.
+		// EIP-2718 트랜잭션을 디코딩합니다.
+		// 먼저 tx 페이로드를 임시 버퍼에 읽습니다.
 		b, buf, err := getPooledBuffer(size)
 		if err != nil {
 			return err
@@ -161,7 +159,7 @@ func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 		if err := s.ReadBytes(b); err != nil {
 			return err
 		}
-		// Now decode the inner transaction.
+		// 내부 트랜잭션을 디코딩합니다.
 		inner, err := tx.decodeTyped(b)
 		if err == nil {
 			tx.setDecoded(inner, size)
@@ -170,8 +168,8 @@ func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 	}
 }
 
-// UnmarshalBinary decodes the canonical encoding of transactions.
-// It supports legacy RLP transactions and EIP-2718 typed transactions.
+// UnmarshalBinary은 트랜잭션의 정규 인코딩을 디코딩합니다.
+// 레거시 RLP 트랜잭션과 EIP-2718 타입화된 트랜잭션을 모두 지원합니다.
 func (tx *Transaction) UnmarshalBinary(b []byte) error {
 	if len(b) > 0 && b[0] > 0x7f {
 		// It's a legacy transaction.
@@ -183,7 +181,7 @@ func (tx *Transaction) UnmarshalBinary(b []byte) error {
 		tx.setDecoded(&data, uint64(len(b)))
 		return nil
 	}
-	// It's an EIP-2718 typed transaction envelope.
+	// EIP-2718 트랜잭션을 디코딩합니다.
 	inner, err := tx.decodeTyped(b)
 	if err != nil {
 		return err
@@ -192,7 +190,7 @@ func (tx *Transaction) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
-// decodeTyped decodes a typed transaction from the canonical format.
+// decodeTyped는 정규 형식에서 타입화된 트랜잭션을 디코딩합니다.
 func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 	if len(b) <= 1 {
 		return nil, errShortTypedTx
@@ -212,7 +210,7 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 	return inner, err
 }
 
-// setDecoded sets the inner transaction and size after decoding.
+// setDecoded는 디코딩을 마친 후 내부 트랜잭션과 크기를 설정합니다.
 func (tx *Transaction) setDecoded(inner TxData, size uint64) {
 	tx.inner = inner
 	tx.time = time.Now()
@@ -231,13 +229,10 @@ func sanityCheckSignature(v *big.Int, r *big.Int, s *big.Int, maybeProtected boo
 		chainID := deriveChainId(v).Uint64()
 		plainV = byte(v.Uint64() - 35 - 2*chainID)
 	} else if maybeProtected {
-		// Only EIP-155 signatures can be optionally protected. Since
-		// we determined this v value is not protected, it must be a
-		// raw 27 or 28.
+		// EIP-155 서명만이 선택적으로 보호될 수 있습니다. 이 v 값이 보호되지 않았다고 결정했다면, 그 값은 27 또는 28이어야 합니다.
 		plainV = byte(v.Uint64() - 27)
 	} else {
-		// If the signature is not optionally protected, we assume it
-		// must already be equal to the recovery id.
+		// 서명이 선택적으로 보호되지 않는다면, v 값이 이미 복구 ID와 같아야 한다고 가정합니다.
 		plainV = byte(v.Uint64())
 	}
 	if !crypto.ValidateSignatureValues(plainV, r, s, false) {
@@ -252,63 +247,62 @@ func isProtectedV(V *big.Int) bool {
 		v := V.Uint64()
 		return v != 27 && v != 28 && v != 1 && v != 0
 	}
-	// anything not 27 or 28 is considered protected
+	// 27이나 28이 아닌 것은 보호된 것으로 간주됩니다.
 	return true
 }
 
-// Protected says whether the transaction is replay-protected.
+// Protected는 트랜잭션을 재실행하는 것을 방지하는지 여부를 나타냅니다.
 func (tx *Transaction) Protected() bool {
 	switch tx := tx.inner.(type) {
 	case *LegacyTx:
 		return tx.V != nil && isProtectedV(tx.V)
 	default:
-		return true
+		return true // 레거시 트랜잭션이 아니라면, 트랜잭션은 항상 보호됩니다.
 	}
 }
 
-// Type returns the transaction type.
+// Type은 트랜잭션 타입을 반환합니다.
 func (tx *Transaction) Type() uint8 {
 	return tx.inner.txType()
 }
 
-// ChainId returns the EIP155 chain ID of the transaction. The return value will always be
-// non-nil. For legacy transactions which are not replay-protected, the return value is
-// zero.
+// ChainId는 EIP155에 따라 트랜잭션의 체인 ID를 반환합니다. 반환 값은 항상 nil이 아닙니다.
+// 재실행이 방지되지 않은 레거시 트랜잭션의 경우, 반환 값은 0입니다.
 func (tx *Transaction) ChainId() *big.Int {
 	return tx.inner.chainID()
 }
 
-// Data returns the input data of the transaction.
+// Data는 트랜잭션의 입력 데이터를 반환합니다.
 func (tx *Transaction) Data() []byte { return tx.inner.data() }
 
-// AccessList returns the access list of the transaction.
+// AccessList는 트랜잭션의 액세스 목록을 반환합니다.
 func (tx *Transaction) AccessList() AccessList { return tx.inner.accessList() }
 
-// Gas returns the gas limit of the transaction.
+// Gas는 트랜잭션의 가스 한도를 반환합니다.
 func (tx *Transaction) Gas() uint64 { return tx.inner.gas() }
 
-// GasPrice returns the gas price of the transaction.
+// GasPrice는 트랜잭션의 가스 가격을 반환합니다.
 func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.inner.gasPrice()) }
 
-// GasTipCap returns the gasTipCap per gas of the transaction.
+// GasTipCap는 트랜잭션의 가스 당 gasTipCap을 반환합니다.
 func (tx *Transaction) GasTipCap() *big.Int { return new(big.Int).Set(tx.inner.gasTipCap()) }
 
-// GasFeeCap returns the fee cap per gas of the transaction.
+// GasFeeCap는 트랜잭션의 가스 당 fee cap을 반환합니다.
 func (tx *Transaction) GasFeeCap() *big.Int { return new(big.Int).Set(tx.inner.gasFeeCap()) }
 
-// Value returns the ether amount of the transaction.
+// Value는 트랜잭션의 이더 양을 반환합니다.
 func (tx *Transaction) Value() *big.Int { return new(big.Int).Set(tx.inner.value()) }
 
-// Nonce returns the sender account nonce of the transaction.
+// Nonce는 트랜잭션의 발신자 계정 nonce를 반환합니다.
 func (tx *Transaction) Nonce() uint64 { return tx.inner.nonce() }
 
-// To returns the recipient address of the transaction.
-// For contract-creation transactions, To returns nil.
+// To는 트랜잭션의 수신자 주소를 반환합니다.
+// 계약 생성 트랜잭션의 경우, To는 nil을 반환합니다.
 func (tx *Transaction) To() *common.Address {
 	return copyAddressPtr(tx.inner.to())
 }
 
-// Cost returns (gas * gasPrice) + (blobGas * blobGasPrice) + value.
+// Cost는 (gas * gasPrice) + (blobGas * blobGasPrice) + value를 반환합니다.
 func (tx *Transaction) Cost() *big.Int {
 	total := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(tx.Gas()))
 	if tx.Type() == BlobTxType {
@@ -318,35 +312,34 @@ func (tx *Transaction) Cost() *big.Int {
 	return total
 }
 
-// RawSignatureValues returns the V, R, S signature values of the transaction.
-// The return values should not be modified by the caller.
+// RawSignatureValues는 트랜잭션의 V, R, S 서명 값을 반환합니다.
+// 반환 값은 호출자에 의해 수정되어서는 안 됩니다.
 func (tx *Transaction) RawSignatureValues() (v, r, s *big.Int) {
 	return tx.inner.rawSignatureValues()
 }
 
-// GasFeeCapCmp compares the fee cap of two transactions.
+// GasFeeCapCmp는 두 트랜잭션의 fee cap을 비교합니다.
 func (tx *Transaction) GasFeeCapCmp(other *Transaction) int {
 	return tx.inner.gasFeeCap().Cmp(other.inner.gasFeeCap())
 }
 
-// GasFeeCapIntCmp compares the fee cap of the transaction against the given fee cap.
+// GasFeeCapIntCmp는 트랜잭션의 fee cap을 주어진 fee cap과 비교합니다.
 func (tx *Transaction) GasFeeCapIntCmp(other *big.Int) int {
 	return tx.inner.gasFeeCap().Cmp(other)
 }
 
-// GasTipCapCmp compares the gasTipCap of two transactions.
+// GasTipCapCmp는 두 트랜잭션의 gasTipCap을 비교합니다.
 func (tx *Transaction) GasTipCapCmp(other *Transaction) int {
 	return tx.inner.gasTipCap().Cmp(other.inner.gasTipCap())
 }
 
-// GasTipCapIntCmp compares the gasTipCap of the transaction against the given gasTipCap.
+// GasTipCapIntCmp는 트랜잭션의 gasTipCap을 주어진 gasTipCap과 비교합니다.
 func (tx *Transaction) GasTipCapIntCmp(other *big.Int) int {
 	return tx.inner.gasTipCap().Cmp(other)
 }
 
-// EffectiveGasTip returns the effective miner gasTipCap for the given base fee.
-// Note: if the effective gasTipCap is negative, this method returns both error
-// the actual negative value, _and_ ErrGasFeeCapTooLow
+// EffectiveGasTip는 주어진 base fee에 대한 유효한 마이너 gasTipCap을 반환합니다.
+// 참고: 유효한 gasTipCap이 음수인 경우, 이 메서드는 실제 음수 값 및 ErrGasFeeCapTooLow를 반환합니다.
 func (tx *Transaction) EffectiveGasTip(baseFee *big.Int) (*big.Int, error) {
 	if baseFee == nil {
 		return tx.GasTipCap(), nil
@@ -359,14 +352,13 @@ func (tx *Transaction) EffectiveGasTip(baseFee *big.Int) (*big.Int, error) {
 	return math.BigMin(tx.GasTipCap(), gasFeeCap.Sub(gasFeeCap, baseFee)), err
 }
 
-// EffectiveGasTipValue is identical to EffectiveGasTip, but does not return an
-// error in case the effective gasTipCap is negative
+// EffectiveGasTipValue는 EffectiveGasTip과 동일하지만, 유효한 gasTipCap이 음수인 경우 오류를 반환하지 않습니다.
 func (tx *Transaction) EffectiveGasTipValue(baseFee *big.Int) *big.Int {
 	effectiveTip, _ := tx.EffectiveGasTip(baseFee)
 	return effectiveTip
 }
 
-// EffectiveGasTipCmp compares the effective gasTipCap of two transactions assuming the given base fee.
+// EffectiveGasTipCmp는 주어진 base fee를 가정하고 두 트랜잭션의 유효한 gasTipCap을 비교합니다.
 func (tx *Transaction) EffectiveGasTipCmp(other *Transaction, baseFee *big.Int) int {
 	if baseFee == nil {
 		return tx.GasTipCapCmp(other)
@@ -374,7 +366,7 @@ func (tx *Transaction) EffectiveGasTipCmp(other *Transaction, baseFee *big.Int) 
 	return tx.EffectiveGasTipValue(baseFee).Cmp(other.EffectiveGasTipValue(baseFee))
 }
 
-// EffectiveGasTipIntCmp compares the effective gasTipCap of a transaction to the given gasTipCap.
+// EffectiveGasTipIntCmp는 트랜잭션의 유효한 gasTipCap을 주어진 gasTipCap과 비교합니다.
 func (tx *Transaction) EffectiveGasTipIntCmp(other *big.Int, baseFee *big.Int) int {
 	if baseFee == nil {
 		return tx.GasTipCapIntCmp(other)
@@ -382,7 +374,7 @@ func (tx *Transaction) EffectiveGasTipIntCmp(other *big.Int, baseFee *big.Int) i
 	return tx.EffectiveGasTipValue(baseFee).Cmp(other)
 }
 
-// BlobGas returns the blob gas limit of the transaction for blob transactions, 0 otherwise.
+// BlobGas는 blob 트랜잭션의 blob gas 한도를 반환합니다. blob 트랜잭션이 아니라면 0을 반환합니다.
 func (tx *Transaction) BlobGas() uint64 {
 	if blobtx, ok := tx.inner.(*BlobTx); ok {
 		return blobtx.blobGas()
@@ -390,7 +382,7 @@ func (tx *Transaction) BlobGas() uint64 {
 	return 0
 }
 
-// BlobGasFeeCap returns the blob gas fee cap per blob gas of the transaction for blob transactions, nil otherwise.
+// BlobGasFeeCap는 blob 트랜잭션의 blob gas 당 blob fee cap을 반환합니다. blob 트랜잭션이 아니라면 nil을 반환합니다.
 func (tx *Transaction) BlobGasFeeCap() *big.Int {
 	if blobtx, ok := tx.inner.(*BlobTx); ok {
 		return blobtx.BlobFeeCap.ToBig()
@@ -398,7 +390,7 @@ func (tx *Transaction) BlobGasFeeCap() *big.Int {
 	return nil
 }
 
-// BlobHashes returns the hashes of the blob commitments for blob transactions, nil otherwise.
+// BlobHashes는 blob 트랜잭션의 blob 해시를 반환합니다. blob 트랜잭션이 아니라면 nil을 반환합니다.
 func (tx *Transaction) BlobHashes() []common.Hash {
 	if blobtx, ok := tx.inner.(*BlobTx); ok {
 		return blobtx.BlobHashes
@@ -406,7 +398,7 @@ func (tx *Transaction) BlobHashes() []common.Hash {
 	return nil
 }
 
-// BlobTxSidecar returns the sidecar of a blob transaction, nil otherwise.
+// BlobTxSidecar는 blob 트랜잭션의 사이드카를 반환합니다. blob 트랜잭션이 아니라면 nil을 반환합니다.
 func (tx *Transaction) BlobTxSidecar() *BlobTxSidecar {
 	if blobtx, ok := tx.inner.(*BlobTx); ok {
 		return blobtx.Sidecar
@@ -414,17 +406,17 @@ func (tx *Transaction) BlobTxSidecar() *BlobTxSidecar {
 	return nil
 }
 
-// BlobGasFeeCapCmp compares the blob fee cap of two transactions.
+// BlobGasFeeCapCmp는 두 트랜잭션의 blob fee cap을 비교합니다.
 func (tx *Transaction) BlobGasFeeCapCmp(other *Transaction) int {
 	return tx.BlobGasFeeCap().Cmp(other.BlobGasFeeCap())
 }
 
-// BlobGasFeeCapIntCmp compares the blob fee cap of the transaction against the given blob fee cap.
+// BlobGasFeeCapIntCmp는 트랜잭션의 blob fee cap을 주어진 blob fee cap과 비교합니다.
 func (tx *Transaction) BlobGasFeeCapIntCmp(other *big.Int) int {
 	return tx.BlobGasFeeCap().Cmp(other)
 }
 
-// WithoutBlobTxSidecar returns a copy of tx with the blob sidecar removed.
+// WithoutBlobTxSidecar는 blob 사이드카가 제거된 tx의 복사본을 반환합니다.
 func (tx *Transaction) WithoutBlobTxSidecar() *Transaction {
 	blobtx, ok := tx.inner.(*BlobTx)
 	if !ok {
@@ -434,7 +426,7 @@ func (tx *Transaction) WithoutBlobTxSidecar() *Transaction {
 		inner: blobtx.withoutSidecar(),
 		time:  tx.time,
 	}
-	// Note: tx.size cache not carried over because the sidecar is included in size!
+	// 참고: tx.size 캐시는 사이드카가 크기에 포함되기 때문에 복사되지 않습니다!
 	if h := tx.hash.Load(); h != nil {
 		cpy.hash.Store(h)
 	}
@@ -444,65 +436,66 @@ func (tx *Transaction) WithoutBlobTxSidecar() *Transaction {
 	return cpy
 }
 
-// SetTime sets the decoding time of a transaction. This is used by tests to set
-// arbitrary times and by persistent transaction pools when loading old txs from
-// disk.
+// SetTime은 트랜잭션의 디코딩 시간을 설정합니다. 이는 테스트에서 임의의 시간을 설정하는 데 사용되거나,
+// 디스크에서 오래된 트랜잭션을 로드할 때 트랜잭션 풀에 의해 사용됩니다.
 func (tx *Transaction) SetTime(t time.Time) {
 	tx.time = t
 }
 
-// Time returns the time when the transaction was first seen on the network. It
-// is a heuristic to prefer mining older txs vs new all other things equal.
+// Time은 트랜잭션이 네트워크에서 처음 확인된 시간을 반환합니다.
+// It is a heuristic to prefer mining older txs vs new all other things equal.
 func (tx *Transaction) Time() time.Time {
 	return tx.time
 }
 
-// Hash returns the transaction hash.
+// Hash는 트랜잭션 해시를 반환합니다.
 func (tx *Transaction) Hash() common.Hash {
-	if hash := tx.hash.Load(); hash != nil {
+	if hash := tx.hash.Load(); hash != nil { // 캐시된 해시가 있는지 확인합니다.
 		return hash.(common.Hash)
 	}
 
 	var h common.Hash
-	if tx.Type() == LegacyTxType {
+	if tx.Type() == LegacyTxType { // 레거시 트랜잭션은 RLP 해시를 사용합니다.
 		h = rlpHash(tx.inner)
 	} else {
-		h = prefixedRlpHash(tx.Type(), tx.inner)
+		h = prefixedRlpHash(tx.Type(), tx.inner) // EIP-2718 트랜잭션은 prefix RLP 해시를 사용합니다.
 	}
-	tx.hash.Store(h)
+	tx.hash.Store(h) // 해시를 캐시합니다.
 	return h
 }
 
-// Size returns the true encoded storage size of the transaction, either by encoding
-// and returning it, or returning a previously cached value.
+// Size는 트랜잭션의 실제 인코딩된 저장공간 크기를 반환합니다.
+// 인코딩하고 반환하거나, 이전에 캐시된 값을 반환합니다.
 func (tx *Transaction) Size() uint64 {
 	if size := tx.size.Load(); size != nil {
 		return size.(uint64)
 	}
 
-	// Cache miss, encode and cache.
-	// Note we rely on the assumption that all tx.inner values are RLP-encoded!
+	// 캐시가 존재하지 않으면 인코딩하고 캐시합니다.
+	// 모든 tx.inner 값이 RLP로 인코딩된다는 가정하에 실행됩니다.
 	c := writeCounter(0)
 	rlp.Encode(&c, &tx.inner)
 	size := uint64(c)
 
-	// For blob transactions, add the size of the blob content and the outer list of the
+	// For blob transactions,
+
+	// blob 트랜잭션의 경우, add the size of the blob content and the outer list of the
 	// tx + sidecar encoding.
 	if sc := tx.BlobTxSidecar(); sc != nil {
 		size += rlp.ListSize(sc.encodedSize())
 	}
 
-	// For typed transactions, the encoding also includes the leading type byte.
+	// 타입화된 트랜잭션의 경우, 인코딩에는 선행하는 타입 바이트도 포함됩니다.
 	if tx.Type() != LegacyTxType {
 		size += 1
 	}
 
-	tx.size.Store(size)
+	tx.size.Store(size) // 사이즈를 캐시합니다.
 	return size
 }
 
-// WithSignature returns a new transaction with the given signature.
-// This signature needs to be in the [R || S || V] format where V is 0 or 1.
+// WithSignature는 주어진 서명을 가진 새 트랜잭션을 반환합니다.
+// 이 서명은 V가 0 또는 1인 [R || S || V] 형식이어야 합니다.
 func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, error) {
 	r, s, v, err := signer.SignatureValues(tx, sig)
 	if err != nil {
@@ -513,15 +506,14 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 	return &Transaction{inner: cpy, time: tx.time}, nil
 }
 
-// Transactions implements DerivableList for transactions.
+// Transactions는 머클루트를 계산하기 위해 필요한 인터페이스를 구현합니다.
 type Transactions []*Transaction
 
-// Len returns the length of s.
+// Len은 s의 길이를 반환합니다.
 func (s Transactions) Len() int { return len(s) }
 
-// EncodeIndex encodes the i'th transaction to w. Note that this does not check for errors
-// because we assume that *Transaction will only ever contain valid txs that were either
-// constructed by decoding or via public API in this package.
+// EncodeIndex는 i번째 트랜잭션을 w에 인코딩합니다. 트랜잭션이 디코딩되거나
+// 이 패키지의 공개 API를 통해 생성된 유효한 txs만 포함된다고 가정하므로 오류를 확인하지 않습니다.
 func (s Transactions) EncodeIndex(i int, w *bytes.Buffer) {
 	tx := s[i]
 	if tx.Type() == LegacyTxType {
@@ -531,7 +523,7 @@ func (s Transactions) EncodeIndex(i int, w *bytes.Buffer) {
 	}
 }
 
-// TxDifference returns a new set which is the difference between a and b.
+// TxDifference는 b에 포함되지 않은 a의 트랜잭션을 반환합니다.
 func TxDifference(a, b Transactions) Transactions {
 	keep := make(Transactions, 0, len(a))
 
@@ -549,7 +541,7 @@ func TxDifference(a, b Transactions) Transactions {
 	return keep
 }
 
-// HashDifference returns a new set which is the difference between a and b.
+// HashDifference는 b에 포함되지 않은 a의 해시를 반환합니다.
 func HashDifference(a, b []common.Hash) []common.Hash {
 	keep := make([]common.Hash, 0, len(a))
 
@@ -567,16 +559,15 @@ func HashDifference(a, b []common.Hash) []common.Hash {
 	return keep
 }
 
-// TxByNonce implements the sort interface to allow sorting a list of transactions
-// by their nonces. This is usually only useful for sorting transactions from a
-// single account, otherwise a nonce comparison doesn't make much sense.
+// TxByNonce는 트랜잭션 목록을 nonce로 정렬할 수 있도록 sort 인터페이스를 구현합니다.
+// 이는 일반적으로 하나의 계정에서 트랜잭션을 정렬하는 데만 유용하며, 그렇지 않으면 nonce 비교는 큰 의미가 없습니다.
 type TxByNonce Transactions
 
 func (s TxByNonce) Len() int           { return len(s) }
 func (s TxByNonce) Less(i, j int) bool { return s[i].Nonce() < s[j].Nonce() }
 func (s TxByNonce) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
-// copyAddressPtr copies an address.
+// copyAddressPtr는 주소를 복사합니다. (깊은 복사)
 func copyAddressPtr(a *common.Address) *common.Address {
 	if a == nil {
 		return nil

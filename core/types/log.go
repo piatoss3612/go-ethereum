@@ -26,7 +26,7 @@ import (
 
 // Log는 컨트랙트 로그 이벤트를 나타냅니다. 이러한 이벤트는 LOG opcode에 의해 생성되고 노드에 의해 저장/인덱싱됩니다.
 type Log struct {
-	// Consensus 필드:
+	// 컨센서스 필드:
 	// 이벤트를 생성한 컨트랙트의 주소
 	Address common.Address `json:"address" gencodec:"required"`
 	// 컨트랙트가 제공한 토픽 목록

@@ -28,7 +28,7 @@ import (
 	"github.com/holiman/uint256"
 )
 
-// BlobTx represents an EIP-4844 transaction.
+// BlobTx는 EIP-4844 트랜잭션을 나타냅니다.
 type BlobTx struct {
 	ChainID    *uint256.Int
 	Nonce      uint64
@@ -42,24 +42,23 @@ type BlobTx struct {
 	BlobFeeCap *uint256.Int // a.k.a. maxFeePerBlobGas
 	BlobHashes []common.Hash
 
-	// A blob transaction can optionally contain blobs. This field must be set when BlobTx
-	// is used to create a transaction for sigining.
+	// blob 트랜잭션은 선택적으로 blob을 포함할 수 있습니다. BlobTx가 서명을 위해 트랜잭션을 생성하는 데 사용될 때 이 필드를 설정해야만 합니다.
 	Sidecar *BlobTxSidecar `rlp:"-"`
 
-	// Signature values
+	// 서명 값
 	V *uint256.Int `json:"v" gencodec:"required"`
 	R *uint256.Int `json:"r" gencodec:"required"`
 	S *uint256.Int `json:"s" gencodec:"required"`
 }
 
-// BlobTxSidecar contains the blobs of a blob transaction.
+// BlobTxSidecar는 blob 트랜잭션의 blob을 포함합니다.
 type BlobTxSidecar struct {
-	Blobs       []kzg4844.Blob       // Blobs needed by the blob pool
-	Commitments []kzg4844.Commitment // Commitments needed by the blob pool
-	Proofs      []kzg4844.Proof      // Proofs needed by the blob pool
+	Blobs       []kzg4844.Blob       // blob 풀이 필요한 blob
+	Commitments []kzg4844.Commitment // blob 풀이 필요한 Commitments
+	Proofs      []kzg4844.Proof      // blob 풀이 필요한 Proofs
 }
 
-// BlobHashes computes the blob hashes of the given blobs.
+// BlobHashes는 주어진 blob의 blob 해시를 계산합니다.
 func (sc *BlobTxSidecar) BlobHashes() []common.Hash {
 	h := make([]common.Hash, len(sc.Commitments))
 	for i := range sc.Blobs {
@@ -68,8 +67,8 @@ func (sc *BlobTxSidecar) BlobHashes() []common.Hash {
 	return h
 }
 
-// encodedSize computes the RLP size of the sidecar elements. This does NOT return the
-// encoded size of the BlobTxSidecar, it's just a helper for tx.Size().
+// encodedSize는 사이드카 요소의 RLP 크기를 계산합니다. 이는 BlobTxSidecar의 인코딩된 크기를 반환하지 않습니다.
+// 그저 tx.Size()를 위한 유틸리티 함수입니다.
 func (sc *BlobTxSidecar) encodedSize() uint64 {
 	var blobs, commitments, proofs uint64
 	for i := range sc.Blobs {
@@ -84,7 +83,7 @@ func (sc *BlobTxSidecar) encodedSize() uint64 {
 	return rlp.ListSize(blobs) + rlp.ListSize(commitments) + rlp.ListSize(proofs)
 }
 
-// blobTxWithBlobs is used for encoding of transactions when blobs are present.
+// blobTxWithBlobs는 blob이 존재할 때 트랜잭션의 인코딩에 사용됩니다.
 type blobTxWithBlobs struct {
 	BlobTx      *BlobTx
 	Blobs       []kzg4844.Blob
@@ -92,14 +91,14 @@ type blobTxWithBlobs struct {
 	Proofs      []kzg4844.Proof
 }
 
-// copy creates a deep copy of the transaction data and initializes all fields.
+// copy는 트랜잭션 데이터의 깊은 복사본을 생성하여 반환합니다.
 func (tx *BlobTx) copy() TxData {
 	cpy := &BlobTx{
 		Nonce: tx.Nonce,
 		To:    tx.To,
 		Data:  common.CopyBytes(tx.Data),
 		Gas:   tx.Gas,
-		// These are copied below.
+		// 이하의 값들은 아래에서 복사됩니다.
 		AccessList: make(AccessList, len(tx.AccessList)),
 		BlobHashes: make([]common.Hash, len(tx.BlobHashes)),
 		Value:      new(uint256.Int),
@@ -148,7 +147,7 @@ func (tx *BlobTx) copy() TxData {
 	return cpy
 }
 
-// accessors for innerTx.
+// innerTx에 대한 접근자
 func (tx *BlobTx) txType() byte           { return BlobTxType }
 func (tx *BlobTx) chainID() *big.Int      { return tx.ChainID.ToBig() }
 func (tx *BlobTx) accessList() AccessList { return tx.AccessList }
@@ -204,11 +203,9 @@ func (tx *BlobTx) encode(b *bytes.Buffer) error {
 }
 
 func (tx *BlobTx) decode(input []byte) error {
-	// Here we need to support two formats: the network protocol encoding of the tx (with
-	// blobs) or the canonical encoding without blobs.
+	// 두 가지 형식을 지원해야 합니다: blob을 포함하는 tx의 네트워크 프로토콜 인코딩 또는 blob이 없는 정규 인코딩.
 	//
-	// The two encodings can be distinguished by checking whether the first element of the
-	// input list is itself a list.
+	// 두 인코딩은 입력 목록의 첫 번째 요소가 리스트인지 확인하여 구분할 수 있습니다.
 
 	outerList, _, err := rlp.SplitList(input)
 	if err != nil {
@@ -222,7 +219,7 @@ func (tx *BlobTx) decode(input []byte) error {
 	if firstElemKind != rlp.List {
 		return rlp.DecodeBytes(input, tx)
 	}
-	// It's a tx with blobs.
+	// blob을 포함하는 tx입니다.
 	var inner blobTxWithBlobs
 	if err := rlp.DecodeBytes(input, &inner); err != nil {
 		return err

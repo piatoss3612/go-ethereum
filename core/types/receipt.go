@@ -41,16 +41,16 @@ var (
 var errShortTypedReceipt = errors.New("typed receipt too short")
 
 const (
-	// ReceiptStatusFailed is the status code of a transaction if execution failed.
+	// ReceiptStatusFailed는 실행이 실패한 경우 트랜잭션의 상태 코드입니다.
 	ReceiptStatusFailed = uint64(0)
 
-	// ReceiptStatusSuccessful is the status code of a transaction if execution succeeded.
+	// ReceiptStatusSuccessful는 실행이 성공한 경우 트랜잭션의 상태 코드입니다.
 	ReceiptStatusSuccessful = uint64(1)
 )
 
-// Receipt represents the results of a transaction.
+// Receipt는 트랜잭션의 결과를 나타냅니다.
 type Receipt struct {
-	// Consensus fields: These fields are defined by the Yellow Paper
+	// 컨센서스 필드: 이 필드는 Yellow Paper에서 정의됩니다.
 	Type              uint8  `json:"type,omitempty"`
 	PostState         []byte `json:"root"`
 	Status            uint64 `json:"status"`
@@ -58,7 +58,7 @@ type Receipt struct {
 	Bloom             Bloom  `json:"logsBloom"         gencodec:"required"`
 	Logs              []*Log `json:"logs"              gencodec:"required"`
 
-	// Implementation fields: These fields are added by geth when processing a transaction.
+	// 구현체 필드: 이 필드는 트랜잭션을 처리할 때 geth에 의해 추가됩니다.
 	TxHash            common.Hash    `json:"transactionHash" gencodec:"required"`
 	ContractAddress   common.Address `json:"contractAddress"`
 	GasUsed           uint64         `json:"gasUsed" gencodec:"required"`
@@ -66,8 +66,7 @@ type Receipt struct {
 	BlobGasUsed       uint64         `json:"blobGasUsed,omitempty"`
 	BlobGasPrice      *big.Int       `json:"blobGasPrice,omitempty"`
 
-	// Inclusion information: These fields provide information about the inclusion of the
-	// transaction corresponding to this receipt.
+	// 포함 정보: 이 필드는 이 영수증에 대응하는 트랜잭션의 정보가 포함되어 있습니다.
 	BlockHash        common.Hash `json:"blockHash,omitempty"`
 	BlockNumber      *big.Int    `json:"blockNumber,omitempty"`
 	TransactionIndex uint        `json:"transactionIndex"`
@@ -86,7 +85,7 @@ type receiptMarshaling struct {
 	TransactionIndex  hexutil.Uint
 }
 
-// receiptRLP is the consensus encoding of a receipt.
+// receiptRLP는 영수증의 컨센서스 인코딩입니다.
 type receiptRLP struct {
 	PostStateOrStatus []byte
 	CumulativeGasUsed uint64
@@ -94,15 +93,15 @@ type receiptRLP struct {
 	Logs              []*Log
 }
 
-// storedReceiptRLP is the storage encoding of a receipt.
+// storedReceiptRLP는 영수증의 스토리지 인코딩입니다.
 type storedReceiptRLP struct {
 	PostStateOrStatus []byte
 	CumulativeGasUsed uint64
 	Logs              []*Log
 }
 
-// NewReceipt creates a barebone transaction receipt, copying the init fields.
-// Deprecated: create receipts using a struct literal instead.
+// NewReceipt는 기본 트랜잭션 영수증을 생성하고 init 필드를 복사합니다.
+// Deprecated: 대신 구조체 리터럴을 사용하여 영수증을 생성하십시오.
 func NewReceipt(root []byte, failed bool, cumulativeGasUsed uint64) *Receipt {
 	r := &Receipt{
 		Type:              LegacyTxType,
@@ -117,8 +116,8 @@ func NewReceipt(root []byte, failed bool, cumulativeGasUsed uint64) *Receipt {
 	return r
 }
 
-// EncodeRLP implements rlp.Encoder, and flattens the consensus fields of a receipt
-// into an RLP stream. If no post state is present, byzantium fork is assumed.
+// EncodeRLP는 영수증의 컨센서스 필드를 RLP 스트림으로 펼칩니다.
+// 포스트 상태가 없으면 비잔티움 포크로 가정합니다.
 func (r *Receipt) EncodeRLP(w io.Writer) error {
 	data := &receiptRLP{r.statusEncoding(), r.CumulativeGasUsed, r.Bloom, r.Logs}
 	if r.Type == LegacyTxType {
@@ -133,13 +132,13 @@ func (r *Receipt) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, buf.Bytes())
 }
 
-// encodeTyped writes the canonical encoding of a typed receipt to w.
+// encodeTyped는 타입화된 영수증의 정규 인코딩을 w에 작성합니다.
 func (r *Receipt) encodeTyped(data *receiptRLP, w *bytes.Buffer) error {
 	w.WriteByte(r.Type)
 	return rlp.Encode(w, data)
 }
 
-// MarshalBinary returns the consensus encoding of the receipt.
+// MarshalBinary은 영수증의 컨센서스 인코딩을 반환합니다.
 func (r *Receipt) MarshalBinary() ([]byte, error) {
 	if r.Type == LegacyTxType {
 		return rlp.EncodeToBytes(r)
@@ -150,8 +149,7 @@ func (r *Receipt) MarshalBinary() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-// DecodeRLP implements rlp.Decoder, and loads the consensus fields of a receipt
-// from an RLP stream.
+// DecodeRLP는 영수증의 컨센서스 필드를 RLP 스트림에서 로드합니다.
 func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
 	kind, size, err := s.Kind()
 	switch {
@@ -181,8 +179,8 @@ func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
 	}
 }
 
-// UnmarshalBinary decodes the consensus encoding of receipts.
-// It supports legacy RLP receipts and EIP-2718 typed receipts.
+// UnmarshalBinary은 영수증의 컨센서스 인코딩을 해제합니다.
+// 레거시 RLP 영수증과 EIP-2718 타입화된 영수증을 지원합니다.
 func (r *Receipt) UnmarshalBinary(b []byte) error {
 	if len(b) > 0 && b[0] > 0x7f {
 		// It's a legacy receipt decode the RLP
@@ -194,11 +192,11 @@ func (r *Receipt) UnmarshalBinary(b []byte) error {
 		r.Type = LegacyTxType
 		return r.setFromRLP(data)
 	}
-	// It's an EIP2718 typed transaction envelope.
+	// EIP2718 타입화된 트랜잭션 래퍼
 	return r.decodeTyped(b)
 }
 
-// decodeTyped decodes a typed receipt from the canonical format.
+// decodeTyped는 정규 형식에서 타입화된 영수증을 디코딩합니다.
 func (r *Receipt) decodeTyped(b []byte) error {
 	if len(b) <= 1 {
 		return errShortTypedReceipt
@@ -246,8 +244,7 @@ func (r *Receipt) statusEncoding() []byte {
 	return r.PostState
 }
 
-// Size returns the approximate memory used by all internal contents. It is used
-// to approximate and limit the memory consumption of various caches.
+// Size는 모든 내부 콘텐츠에 의해 사용되는 근사 메모리를 반환합니다. 다양한 캐시의 메모리 소비를 근사화하고 제한하는 데 사용됩니다.
 func (r *Receipt) Size() common.StorageSize {
 	size := common.StorageSize(unsafe.Sizeof(*r)) + common.StorageSize(len(r.PostState))
 	size += common.StorageSize(len(r.Logs)) * common.StorageSize(unsafe.Sizeof(Log{}))
@@ -257,12 +254,10 @@ func (r *Receipt) Size() common.StorageSize {
 	return size
 }
 
-// ReceiptForStorage is a wrapper around a Receipt with RLP serialization
-// that omits the Bloom field and deserialization that re-computes it.
+// ReceiptForStorage는 직렬화 시에 Bloom 필드를 생략하고 역직렬화 시에 다시 계산하는 영수증을 래핑합니다.
 type ReceiptForStorage Receipt
 
-// EncodeRLP implements rlp.Encoder, and flattens all content fields of a receipt
-// into an RLP stream.
+// EncodeRLP는 영수증의 모든 콘텐츠 직렬화하여 RLP 스트림에 작성합니다.
 func (r *ReceiptForStorage) EncodeRLP(_w io.Writer) error {
 	w := rlp.NewEncoderBuffer(_w)
 	outerList := w.List()
@@ -279,8 +274,7 @@ func (r *ReceiptForStorage) EncodeRLP(_w io.Writer) error {
 	return w.Flush()
 }
 
-// DecodeRLP implements rlp.Decoder, and loads both consensus and implementation
-// fields of a receipt from an RLP stream.
+// DecodeRLP는 rlp.Decoder를 구현하며 영수증의 컨센서스 및 구현 필드를 모두 RLP 스트림에서 로드합니다.
 func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
 	var stored storedReceiptRLP
 	if err := s.Decode(&stored); err != nil {
@@ -296,13 +290,13 @@ func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
 	return nil
 }
 
-// Receipts implements DerivableList for receipts.
+// Receipts는 영수증의 머클루트를 계산하기 위해 필요한 인터페이스를 구현합니다.
 type Receipts []*Receipt
 
-// Len returns the number of receipts in this list.
+// Len은 목록에 있는 영수증 개수를 반환합니다.
 func (rs Receipts) Len() int { return len(rs) }
 
-// EncodeIndex encodes the i'th receipt to w.
+// EncodeIndex는 i번째 영수증을 w에 인코딩합니다.
 func (rs Receipts) EncodeIndex(i int, w *bytes.Buffer) {
 	r := rs[i]
 	data := &receiptRLP{r.statusEncoding(), r.CumulativeGasUsed, r.Bloom, r.Logs}
@@ -323,6 +317,8 @@ func (rs Receipts) EncodeIndex(i int, w *bytes.Buffer) {
 
 // DeriveFields fills the receipts with their computed fields based on consensus
 // data and contextual infos like containing block and transactions.
+
+// DeriveFields는 컨센서스 데이터 및 포함된 블록 및 트랜잭션과 같은 맥락 정보를 기반으로 영수증에 계산된 필드를 채웁니다.
 func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, number uint64, time uint64, baseFee *big.Int, blobGasPrice *big.Int, txs []*Transaction) error {
 	signer := MakeSigner(config, new(big.Int).SetUint64(number), time)
 
@@ -331,39 +327,39 @@ func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, nu
 		return errors.New("transaction and receipt count mismatch")
 	}
 	for i := 0; i < len(rs); i++ {
-		// The transaction type and hash can be retrieved from the transaction itself
+		// 트랜잭션 유형 및 해시는 트랜잭션 자체에서 찾을 수 있습니다.
 		rs[i].Type = txs[i].Type()
 		rs[i].TxHash = txs[i].Hash()
 		rs[i].EffectiveGasPrice = txs[i].inner.effectiveGasPrice(new(big.Int), baseFee)
 
-		// EIP-4844 blob transaction fields
+		// EIP-4844 blob 트랜잭션 필드
 		if txs[i].Type() == BlobTxType {
 			rs[i].BlobGasUsed = txs[i].BlobGas()
 			rs[i].BlobGasPrice = blobGasPrice
 		}
 
-		// block location fields
+		// 블록 위치 필드
 		rs[i].BlockHash = hash
 		rs[i].BlockNumber = new(big.Int).SetUint64(number)
 		rs[i].TransactionIndex = uint(i)
 
-		// The contract address can be derived from the transaction itself
+		// 컨트랙트 주소는 트랜잭션 자체에서 유도할 수 있습니다.
 		if txs[i].To() == nil {
-			// Deriving the signer is expensive, only do if it's actually needed
+			// 서명자를 유도하는 것은 비용이 많이 들기 때문에 실제로 필요한 경우에만 수행합니다.
 			from, _ := Sender(signer, txs[i])
 			rs[i].ContractAddress = crypto.CreateAddress(from, txs[i].Nonce())
 		} else {
 			rs[i].ContractAddress = common.Address{}
 		}
 
-		// The used gas can be calculated based on previous r
+		// 블록에서 사용된 가스는 이전 영수증을 기반으로 계산할 수 있습니다.
 		if i == 0 {
 			rs[i].GasUsed = rs[i].CumulativeGasUsed
 		} else {
 			rs[i].GasUsed = rs[i].CumulativeGasUsed - rs[i-1].CumulativeGasUsed
 		}
 
-		// The derived log fields can simply be set from the block and transaction
+		// 이하의 필드는 블록 및 트랜잭션에서 간단히 유도할 수 있습니다.
 		for j := 0; j < len(rs[i].Logs); j++ {
 			rs[i].Logs[j].BlockNumber = number
 			rs[i].Logs[j].BlockHash = hash
