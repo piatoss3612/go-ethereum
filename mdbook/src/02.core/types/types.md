@@ -1,6 +1,6 @@
 # 01.types 패키지
 
-- 이더리움 consensus와 관련된 타입들을 정의한 패키지이므로 먼저 살펴봅니다.
+- 이더리움 프로토콜을 구현하는 데 필요한 핵심 타입들이 정의되어 있습니다.
 
 ## block.go
 
@@ -571,6 +571,12 @@ type Withdrawal struct {
 ```
 
 - [github.com/ethereum/go-ethereum/rlp/rlpgen](https://github.com/ethereum/go-ethereum/tree/master/rlp/rlpgen)
+
+---
+
+## 타입들 간의 관계 정리
+
+![types](./relations.png)
 
 ---
 
