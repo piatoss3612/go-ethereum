@@ -13,3 +13,4 @@
 - [core](./02.core/overview.md)
     - [types 패키지](./02.core/types/types.md)
         - [EIP-155](./02.core/types/eip155.md)
+        - [EIP-2718](./02.core/types/eip2718.md)
