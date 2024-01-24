@@ -12,3 +12,4 @@
     - [mclock 패키지](./01.common/08.mclock.md)
 - [core](./02.core/overview.md)
     - [types 패키지](./02.core/types/types.md)
+        - [EIP-155](./02.core/types/eip155.md)
