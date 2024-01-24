@@ -15,3 +15,4 @@
         - [EIP-155](./02.core/types/eip155.md)
         - [EIP-2718](./02.core/types/eip2718.md)
         - [EIP-2930](./02.core/types/eip2930.md)
+        - [EIP-1559](./02.core/types/eip1559.md)
