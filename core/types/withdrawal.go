@@ -42,8 +42,6 @@ type withdrawalMarshaling struct {
 	Amount    hexutil.Uint64
 }
 
-// Withdrawals implements DerivableList for withdrawals.
-
 // Withdrawals는 머클루트를 계산하기 위해 필요한 인터페이스를 구현합니다.
 type Withdrawals []*Withdrawal
 

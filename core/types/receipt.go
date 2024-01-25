@@ -93,14 +93,14 @@ type receiptRLP struct {
 	Logs              []*Log
 }
 
-// storedReceiptRLP는 영수증의 스토리지 인코딩입니다.
+// storedReceiptRLP는 영수증의 스토리지 인코딩입니다. (블룸 필드가 생략됨)
 type storedReceiptRLP struct {
 	PostStateOrStatus []byte
 	CumulativeGasUsed uint64
 	Logs              []*Log
 }
 
-// NewReceipt는 기본 트랜잭션 영수증을 생성하고 init 필드를 복사합니다.
+// NewReceipt는 기본 트랜잭션 영수증을 생성하고 초기 필드를 복사합니다.
 // Deprecated: 대신 구조체 리터럴을 사용하여 영수증을 생성하십시오.
 func NewReceipt(root []byte, failed bool, cumulativeGasUsed uint64) *Receipt {
 	r := &Receipt{
@@ -120,11 +120,11 @@ func NewReceipt(root []byte, failed bool, cumulativeGasUsed uint64) *Receipt {
 // 포스트 상태가 없으면 비잔티움 포크로 가정합니다.
 func (r *Receipt) EncodeRLP(w io.Writer) error {
 	data := &receiptRLP{r.statusEncoding(), r.CumulativeGasUsed, r.Bloom, r.Logs}
-	if r.Type == LegacyTxType {
+	if r.Type == LegacyTxType { // 레거시 트랜잭션인 경우
 		return rlp.Encode(w, data)
 	}
-	buf := encodeBufferPool.Get().(*bytes.Buffer)
-	defer encodeBufferPool.Put(buf)
+	buf := encodeBufferPool.Get().(*bytes.Buffer) // 버퍼 풀에서 버퍼를 가져옵니다.
+	defer encodeBufferPool.Put(buf)               // 버퍼를 반환합니다.
 	buf.Reset()
 	if err := r.encodeTyped(data, buf); err != nil {
 		return err
@@ -132,15 +132,15 @@ func (r *Receipt) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, buf.Bytes())
 }
 
-// encodeTyped는 타입화된 영수증의 정규 인코딩을 w에 작성합니다.
+// encodeTyped는 타입 영수증의 정규 인코딩을 w에 작성합니다.
 func (r *Receipt) encodeTyped(data *receiptRLP, w *bytes.Buffer) error {
 	w.WriteByte(r.Type)
-	return rlp.Encode(w, data)
+	return rlp.Encode(w, data) // 타입 필드와 데이터를 인코딩합니다.
 }
 
 // MarshalBinary은 영수증의 컨센서스 인코딩을 반환합니다.
 func (r *Receipt) MarshalBinary() ([]byte, error) {
-	if r.Type == LegacyTxType {
+	if r.Type == LegacyTxType { // 레거시 트랜잭션인 경우
 		return rlp.EncodeToBytes(r)
 	}
 	data := &receiptRLP{r.statusEncoding(), r.CumulativeGasUsed, r.Bloom, r.Logs}
@@ -156,7 +156,7 @@ func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
 	case err != nil:
 		return err
 	case kind == rlp.List:
-		// It's a legacy receipt.
+		// 레거시 영수증입니다.
 		var dec receiptRLP
 		if err := s.Decode(&dec); err != nil {
 			return err
@@ -166,7 +166,7 @@ func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
 	case kind == rlp.Byte:
 		return errShortTypedReceipt
 	default:
-		// It's an EIP-2718 typed tx receipt.
+		// EIP-2718 타입 트랜잭션 영수증입니다.
 		b, buf, err := getPooledBuffer(size)
 		if err != nil {
 			return err
@@ -180,10 +180,10 @@ func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
 }
 
 // UnmarshalBinary은 영수증의 컨센서스 인코딩을 해제합니다.
-// 레거시 RLP 영수증과 EIP-2718 타입화된 영수증을 지원합니다.
+// 레거시 RLP 영수증과 EIP-2718 타입 영수증을 지원합니다.
 func (r *Receipt) UnmarshalBinary(b []byte) error {
 	if len(b) > 0 && b[0] > 0x7f {
-		// It's a legacy receipt decode the RLP
+		// 레거시 영수증
 		var data receiptRLP
 		err := rlp.DecodeBytes(b, &data)
 		if err != nil {
@@ -192,16 +192,16 @@ func (r *Receipt) UnmarshalBinary(b []byte) error {
 		r.Type = LegacyTxType
 		return r.setFromRLP(data)
 	}
-	// EIP2718 타입화된 트랜잭션 래퍼
+	// EIP2718 타입 트랜잭션 래퍼
 	return r.decodeTyped(b)
 }
 
-// decodeTyped는 정규 형식에서 타입화된 영수증을 디코딩합니다.
+// decodeTyped는 정규 형식에서 타입 영수증을 디코딩합니다.
 func (r *Receipt) decodeTyped(b []byte) error {
 	if len(b) <= 1 {
 		return errShortTypedReceipt
 	}
-	switch b[0] {
+	switch b[0] { // 첫 번째 바이트는 트랜잭션 유형입니다.
 	case DynamicFeeTxType, AccessListTxType, BlobTxType:
 		var data receiptRLP
 		err := rlp.DecodeBytes(b[1:], &data)
@@ -210,7 +210,7 @@ func (r *Receipt) decodeTyped(b []byte) error {
 		}
 		r.Type = b[0]
 		return r.setFromRLP(data)
-	default:
+	default: // 지원되지 않는 트랜잭션 유형
 		return ErrTxTypeNotSupported
 	}
 }
@@ -309,14 +309,10 @@ func (rs Receipts) EncodeIndex(i int, w *bytes.Buffer) {
 	case AccessListTxType, DynamicFeeTxType, BlobTxType:
 		rlp.Encode(w, data)
 	default:
-		// For unsupported types, write nothing. Since this is for
-		// DeriveSha, the error will be caught matching the derived hash
-		// to the block.
+		// 지원되지 않는 유형의 경우 아무것도 작성하지 않습니다.
+		// 이는 DeriveSha를 위한 것이므로 파생된 해시를 블록과 일치시키는 오류가 발생합니다.
 	}
 }
-
-// DeriveFields fills the receipts with their computed fields based on consensus
-// data and contextual infos like containing block and transactions.
 
 // DeriveFields는 컨센서스 데이터 및 포함된 블록 및 트랜잭션과 같은 맥락 정보를 기반으로 영수증에 계산된 필드를 채웁니다.
 func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, number uint64, time uint64, baseFee *big.Int, blobGasPrice *big.Int, txs []*Transaction) error {
@@ -347,7 +343,7 @@ func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, nu
 		if txs[i].To() == nil {
 			// 서명자를 유도하는 것은 비용이 많이 들기 때문에 실제로 필요한 경우에만 수행합니다.
 			from, _ := Sender(signer, txs[i])
-			rs[i].ContractAddress = crypto.CreateAddress(from, txs[i].Nonce())
+			rs[i].ContractAddress = crypto.CreateAddress(from, txs[i].Nonce()) // 서명자의 주소와 트랜잭션의 nonce를 사용하여 컨트랙트 주소를 계산합니다.
 		} else {
 			rs[i].ContractAddress = common.Address{}
 		}
