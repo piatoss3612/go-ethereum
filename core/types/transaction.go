@@ -105,7 +105,7 @@ func (tx *Transaction) EncodeRLP(w io.Writer) error {
 		return rlp.Encode(w, tx.inner)
 	}
 
-	// 레거시 트랜잭션이 아니라면, EIP-2718 타입화된 트랜잭션입니다.
+	// 레거시 트랜잭션이 아니라면, EIP-2718 타입 트랜잭션입니다.
 	buf := encodeBufferPool.Get().(*bytes.Buffer)
 	defer encodeBufferPool.Put(buf)
 	buf.Reset()
@@ -115,14 +115,14 @@ func (tx *Transaction) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, buf.Bytes())
 }
 
-// encodeTyped는 w에 타입화된 트랜잭션의 정규 인코딩을 작성합니다.
+// encodeTyped는 w에 타입 트랜잭션의 정규 인코딩을 작성합니다.
 func (tx *Transaction) encodeTyped(w *bytes.Buffer) error {
 	w.WriteByte(tx.Type())
 	return tx.inner.encode(w)
 }
 
 // MarshalBinary은 트랜잭션의 정규 인코딩을 반환합니다.
-// 레거시 트랜잭션의 경우 RLP 인코딩을 반환합니다. EIP-2718 타입화된 트랜잭션의 경우 타입과 페이로드를 반환합니다.
+// 레거시 트랜잭션의 경우 RLP 인코딩을 반환합니다. EIP-2718 타입 트랜잭션의 경우 타입과 페이로드를 반환합니다.
 func (tx *Transaction) MarshalBinary() ([]byte, error) {
 	if tx.Type() == LegacyTxType {
 		return rlp.EncodeToBytes(tx.inner)
@@ -169,7 +169,7 @@ func (tx *Transaction) DecodeRLP(s *rlp.Stream) error {
 }
 
 // UnmarshalBinary은 트랜잭션의 정규 인코딩을 디코딩합니다.
-// 레거시 RLP 트랜잭션과 EIP-2718 타입화된 트랜잭션을 모두 지원합니다.
+// 레거시 RLP 트랜잭션과 EIP-2718 타입 트랜잭션을 모두 지원합니다.
 func (tx *Transaction) UnmarshalBinary(b []byte) error {
 	if len(b) > 0 && b[0] > 0x7f {
 		// It's a legacy transaction.
@@ -190,7 +190,7 @@ func (tx *Transaction) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
-// decodeTyped는 정규 형식에서 타입화된 트랜잭션을 디코딩합니다.
+// decodeTyped는 정규 형식에서 타입 트랜잭션을 디코딩합니다.
 func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 	if len(b) <= 1 {
 		return nil, errShortTypedTx
@@ -485,7 +485,7 @@ func (tx *Transaction) Size() uint64 {
 		size += rlp.ListSize(sc.encodedSize())
 	}
 
-	// 타입화된 트랜잭션의 경우, 인코딩에는 선행하는 타입 바이트도 포함됩니다.
+	// 타입 트랜잭션의 경우, 인코딩에는 선행하는 타입 바이트도 포함됩니다.
 	if tx.Type() != LegacyTxType {
 		size += 1
 	}

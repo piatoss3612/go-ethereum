@@ -23,25 +23,25 @@ import (
 )
 
 var (
-	// EmptyRootHash는 빈 머클 트리의 루트 해시입니다.
+	// EmptyRootHash는 빈 머클 트라이의 루트 해시입니다.
 	EmptyRootHash = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 
 	// EmptyUncleHash는 빈 엉클 집합의 해시입니다.
 	EmptyUncleHash = rlpHash([]*Header(nil)) // 1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347
 
-	// EmptyCodeHash는 빈 EVM 바이트 코드의 해시입니다. (keccak256)
+	// EmptyCodeHash는 빈 EVM 바이트 코드의 해시입니다.
 	EmptyCodeHash = crypto.Keccak256Hash(nil) // c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
 
-	// EmptyTxsHash는 빈 트랜잭션 집합의 해시입니다. (빈 머클 트리의 루트 해시와 동일)
+	// EmptyTxsHash는 빈 트랜잭션 집합의 해시입니다. (빈 머클 트라이의 루트 해시와 동일)
 	EmptyTxsHash = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 
-	// EmptyReceiptsHash는 빈 영수증 집합의 해시입니다. (빈 머클 트리의 루트 해시와 동일)
+	// EmptyReceiptsHash는 빈 영수증 집합의 해시입니다. (빈 머클 트라이의 루트 해시와 동일)
 	EmptyReceiptsHash = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 
-	// EmptyWithdrawalsHash는 빈 출금 집합의 해시입니다. (빈 머클 트리의 루트 해시와 동일)
+	// EmptyWithdrawalsHash는 빈 출금 집합의 해시입니다. (빈 머클 트라이의 루트 해시와 동일)
 	EmptyWithdrawalsHash = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 
-	// EmptyVerkleHash는 빈 버클 트리의 해시입니다.
+	// EmptyVerkleHash는 빈 버클 트라이의 해시입니다.
 	EmptyVerkleHash = common.Hash{}
 )
 

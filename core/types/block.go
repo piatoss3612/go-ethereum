@@ -112,7 +112,7 @@ func (h *Header) Hash() common.Hash {
 	return rlpHash(h)
 }
 
-var headerSize = common.StorageSize(reflect.TypeOf(Header{}).Size())
+var headerSize = common.StorageSize(reflect.TypeOf(Header{}).Size()) // 584 bytes
 
 // Size는 모든 내부 컨텐츠에 의해 사용되는 근사 메모리 크기를 반환합니다.
 // 이는 다양한 캐시의 메모리 소비를 근사화하고 제한하는 데 사용됩니다.
@@ -121,6 +121,7 @@ func (h *Header) Size() common.StorageSize {
 	if h.BaseFee != nil {
 		baseFeeBits = h.BaseFee.BitLen()
 	}
+	// 헤더 크기 + extraData 크기 + (difficulty 비트 수 + number 비트 수 + baseFee 비트 수) / 8 (바이트 수)
 	return headerSize + common.StorageSize(len(h.Extra)+(h.Difficulty.BitLen()+h.Number.BitLen()+baseFeeBits)/8)
 }
 
@@ -395,8 +396,8 @@ func (b *Block) Size() uint64 {
 		return size.(uint64)
 	}
 	c := writeCounter(0)
-	rlp.Encode(&c, b)
-	b.size.Store(uint64(c))
+	rlp.Encode(&c, b)       // 블록을 인코딩하여 크기를 계산합니다.
+	b.size.Store(uint64(c)) // 값을 캐시합니다.
 	return uint64(c)
 }
 
@@ -405,7 +406,7 @@ func (b *Block) SanityCheck() error {
 	return b.header.SanityCheck()
 }
 
-type writeCounter uint64
+type writeCounter uint64 // io.Writer를 구현합니다. 쓰여진 바이트 수를 세기 위해 사용됩니다.
 
 func (c *writeCounter) Write(b []byte) (int, error) {
 	*c += writeCounter(len(b))

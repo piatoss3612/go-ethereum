@@ -1,10 +1,10 @@
-# 01.types 패키지
+# types 패키지
 
-- 이더리움 consensus와 관련된 타입들을 정의한 패키지이므로 먼저 살펴봅니다.
+- 이더리움 프로토콜을 구현하는 데 필요한 핵심 타입들이 정의되어 있습니다.
 
 ## block.go
 
-- 블록과 관련된 타입들을 정의한 파일입니다.
+- 블록, 블록 헤더, 블록 바디를 정의한 파일입니다.
 
 ### Header 
 
@@ -457,12 +457,12 @@ type BlobTxSidecar struct {
 ```go
 // SignTx는 주어진 서명자와 개인 키를 사용하여 트랜잭션에 서명합니다.
 func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, error) {
-	h := s.Hash(tx)                    // 서명 해시 생성
-	sig, err := crypto.Sign(h[:], prv) // 개인 키로 서명
+	h := s.Hash(tx)                    // 서명 해시 생성 (Signer에 따라 다르게 생성됨)
+	sig, err := crypto.Sign(h[:], prv) // 개인 키로 서명 (직렬화된 서명 데이터 반환)
 	if err != nil {
 		return nil, err
 	}
-	return tx.WithSignature(s, sig) // 트랜잭션에 서명 추가
+	return tx.WithSignature(s, sig) // 트랜잭션에 서명 데이터 추가 (V, R, S 값 설정 + 서명자의 체인 ID 설정)
 }
 ```
 
@@ -536,6 +536,10 @@ type HomesteadSigner struct{ FrontierSigner }
 type FrontierSigner struct{}
 ```
 
+### 서명 해시 생성 방식의 차이
+
+<img src="./sighash.png" >
+
 ---
 
 ## withdrawal.go
@@ -571,6 +575,12 @@ type Withdrawal struct {
 ```
 
 - [github.com/ethereum/go-ethereum/rlp/rlpgen](https://github.com/ethereum/go-ethereum/tree/master/rlp/rlpgen)
+
+---
+
+## 타입들 간의 관계 정리
+
+![types](./relations.png)
 
 ---
 

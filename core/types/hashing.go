@@ -33,8 +33,6 @@ var hasherPool = sync.Pool{
 	New: func() interface{} { return sha3.NewLegacyKeccak256() },
 }
 
-// encodeBufferPool holds temporary encoder buffers for DeriveSha and TX encoding.
-
 // encodeBufferPool은 DeriveSha 및 TX 인코딩을 위한 임시 인코더 버퍼를 보관합니다.
 var encodeBufferPool = sync.Pool{
 	New: func() interface{} { return new(bytes.Buffer) },
@@ -96,10 +94,8 @@ type DerivableList interface {
 func encodeForDerive(list DerivableList, i int, buf *bytes.Buffer) []byte {
 	buf.Reset()
 	list.EncodeIndex(i, buf)
-	// It's really unfortunate that we need to perform this copy.
-	// StackTrie holds onto the values until Hash is called, so the values
-	// written to it must not alias.
-	// (어쩔 수 없이 복사를 수행해야 한다고 하는데 정확히 무슨 말인지 모르겠습니다.)
+	// 이 복사를 수행해야 한다는 것은 정말 불행합니다.
+	// StackTrie는 Hash()가 호출될 때까지 값을 보관하므로 StackTrie에 기록된 값은 참조되어서는 안 됩니다.
 	return common.CopyBytes(buf.Bytes())
 }
 
@@ -114,7 +110,8 @@ func DeriveSha(list DerivableList, hasher TrieHasher) common.Hash {
 	// order that `list` provides hashes in. This insertion sequence ensures that the
 	// order is correct.
 
-	// StackTrie는 값이 증가하는 해시 순서로 삽입되어야 합니다. 이 삽입 순서는 순서가 올바르도록 보장합니다.(?)
+	// StackTrie는 값이 증가하는 해시 순서로 삽입되어야 합니다. 이는 일반적으로 list가 해시를 제공하는 순서와 다릅니다.
+	// 이 삽입 순서는 순서가 올바르도록 보장합니다.(?)
 	//
 	// 해시 함수에서 반환된 오류는 어짜피 해시 함수가 오류가 발생한 경우 잘못된 해시를 생성되기 때문에 생략됩니다.
 	var indexBuf []byte
@@ -133,5 +130,6 @@ func DeriveSha(list DerivableList, hasher TrieHasher) common.Hash {
 		value := encodeForDerive(list, i, valueBuf)
 		hasher.Update(indexBuf, value)
 	}
+	// TODO: 왜 이렇게 구현했을까?
 	return hasher.Hash()
 }

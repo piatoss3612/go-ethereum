@@ -54,10 +54,10 @@ func (b *Bloom) SetBytes(d []byte) {
 	if len(b) < len(d) { // b의 길이가 d보다 작으면 패닉 발생
 		panic(fmt.Sprintf("bloom bytes too big %d %d", len(b), len(d)))
 	}
-	copy(b[BloomByteLength-len(d):], d) // d의 길이만큼 b에 복사 (b의 뒤에서부터)
+	copy(b[BloomByteLength-len(d):], d) // d의 길이만큼 b에 복사 (d의 길이가 b보다 작으면 앞쪽은 무시됨)
 }
 
-// Add는 d를 필터에 추가합니다. Test(d)의 미래 호출은 true를 반환합니다.
+// Add는 d를 필터에 추가합니다. 이후 Test(d)의 호출은 true를 반환합니다. (d가 블룸 필터에 추가되었기 때문)
 func (b *Bloom) Add(d []byte) {
 	b.add(d, make([]byte, 6))
 }
@@ -77,14 +77,14 @@ func (b Bloom) Big() *big.Int {
 	return new(big.Int).SetBytes(b[:])
 }
 
-// Bytes는 블룸의 바이트 슬라이스를 반환합니다.
+// Bytes는 블룸 필터의 바이트 슬라이스를 반환합니다.
 func (b Bloom) Bytes() []byte {
 	return b[:]
 }
 
 // Test는 주어진 토픽이 블룸 필터에 들어 있는지 여부를 반환합니다.
 func (b Bloom) Test(topic []byte) bool {
-	i1, v1, i2, v2, i3, v3 := bloomValues(topic, make([]byte, 6))
+	i1, v1, i2, v2, i3, v3 := bloomValues(topic, make([]byte, 6)) // 토픽을 추가할 때와 동일한 방법으로 인덱스와 값을 얻습니다.
 	return v1 == v1&b[i1] &&
 		v2 == v2&b[i2] &&
 		v3 == v3&b[i3]
@@ -106,7 +106,7 @@ func CreateBloom(receipts Receipts) Bloom {
 	var bin Bloom
 	for _, receipt := range receipts {
 		for _, log := range receipt.Logs {
-			bin.add(log.Address.Bytes(), buf) // 로그를 발생시킨 주소를 해싱하여 블룸 필터에 추가합니다.
+			bin.add(log.Address.Bytes(), buf) // 로그를 발생시킨 컨트랙트 주소를 해싱하여 블룸 필터에 추가합니다.
 			for _, b := range log.Topics {
 				bin.add(b[:], buf) // 로그의 토픽을 해싱하여 블룸 필터에 추가합니다.
 			}
@@ -120,7 +120,7 @@ func LogsBloom(logs []*Log) []byte {
 	buf := make([]byte, 6)
 	var bin Bloom
 	for _, log := range logs {
-		bin.add(log.Address.Bytes(), buf) // 로그를 발생시킨 주소를 해싱하여 블룸 필터에 추가합니다.
+		bin.add(log.Address.Bytes(), buf) // 로그를 발생시킨 컨트랙트 주소를 해싱하여 블룸 필터에 추가합니다.
 		for _, b := range log.Topics {
 			bin.add(b[:], buf) // 로그의 토픽을 해싱하여 블룸 필터에 추가합니다.
 		}
@@ -135,8 +135,8 @@ func Bloom9(data []byte) []byte {
 	return b.Bytes()
 }
 
-// bloomValues는 주어진 데이터에 대해 설정할 바이트 (인덱스-값 쌍)를 반환합니다.
-// hashbuf는 6바이트 이상의 임시 버퍼여야 합니다.
+// bloomValues는 주어진 데이터에 대해 설정할 바이트(인덱스-값 쌍)를 반환합니다.
+// hashbuf는 길이가 6 이상의 임시 버퍼여야 합니다.
 func bloomValues(data []byte, hashbuf []byte) (uint, byte, uint, byte, uint, byte) {
 	sha := hasherPool.Get().(crypto.KeccakState) // keccak256 해시 함수를 풀에서 가져옵니다.
 	sha.Reset()                                  // 해시 함수를 초기화합니다.

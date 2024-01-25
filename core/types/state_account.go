@@ -58,7 +58,7 @@ func (acct *StateAccount) Copy() *StateAccount {
 	}
 }
 
-// SlimAccount는 상태 트라이의 머클루트가 바이트 슬라이스로 대체된 버전입니다.
+// SlimAccount는 스토리지 트라이의 머클루트가 바이트 슬라이스로 대체된 버전입니다.
 // 이 형식은 빈 루트와 코드 해시를 nil 바이트 슬라이스로 대체하는 슬림 형식 또는 전체 컨센서스 형식을 나타낼 수 있습니다.
 type SlimAccount struct {
 	Nonce    uint64

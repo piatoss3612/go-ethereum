@@ -94,12 +94,12 @@ func LatestSignerForChainID(chainID *big.Int) Signer {
 
 // SignTx는 주어진 서명자와 개인 키를 사용하여 트랜잭션에 서명합니다.
 func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, error) {
-	h := s.Hash(tx)                    // 서명 해시 생성
-	sig, err := crypto.Sign(h[:], prv) // 개인 키로 서명
+	h := s.Hash(tx)                    // 서명 해시 생성 (Signer에 따라 다르게 생성됨)
+	sig, err := crypto.Sign(h[:], prv) // 개인 키로 서명 (직렬화된 서명 데이터 반환)
 	if err != nil {
 		return nil, err
 	}
-	return tx.WithSignature(s, sig) // 트랜잭션에 서명 추가
+	return tx.WithSignature(s, sig) // 트랜잭션에 서명 데이터 추가 (V, R, S 값 설정 + 서명자의 체인 ID 설정)
 }
 
 // SignNewTx는 트랜잭션을 생성하고 서명합니다.
@@ -137,7 +137,7 @@ func Sender(signer Signer, tx *Transaction) (common.Address, error) {
 		}
 	}
 
-	// 서명자가 일치하지 않는 경우 서명을 다시 계산합니다.
+	// 서명자가 일치하지 않는 경우 서명자를 다시 계산합니다.
 	addr, err := signer.Sender(tx)
 	if err != nil {
 		return common.Address{}, err
@@ -184,7 +184,7 @@ func (s cancunSigner) Sender(tx *Transaction) (common.Address, error) {
 		return s.londonSigner.Sender(tx)
 	}
 	// Blob 트랜잭션인 경우
-	V, R, S := tx.RawSignatureValues()
+	V, R, S := tx.RawSignatureValues() // 서명 값 추출 (V는 0 또는 1)
 	// Blob 트랜잭션은 복구 ID로 0과 1을 사용하도록 정의되어 있습니다.
 	// 27을 더하여 보호되지 않은 Homestead 서명과 동일하게 만듭니다.
 	V = new(big.Int).Add(V, big.NewInt(27))
@@ -524,9 +524,9 @@ func decodeSignature(sig []byte) (r, s, v *big.Int) {
 	if len(sig) != crypto.SignatureLength {
 		panic(fmt.Sprintf("wrong size for signature: got %d, want %d", len(sig), crypto.SignatureLength))
 	}
-	r = new(big.Int).SetBytes(sig[:32])
-	s = new(big.Int).SetBytes(sig[32:64])
-	v = new(big.Int).SetBytes([]byte{sig[64] + 27})
+	r = new(big.Int).SetBytes(sig[:32])             // 서명의 처음 32바이트는 R 값입니다.
+	s = new(big.Int).SetBytes(sig[32:64])           // 서명의 다음 32바이트는 S 값입니다.
+	v = new(big.Int).SetBytes([]byte{sig[64] + 27}) // 마지막 바이트는 V 값입니다.
 	return r, s, v
 }
 
@@ -553,18 +553,18 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 		return common.Address{}, errors.New("invalid public key")
 	}
 	var addr common.Address
-	copy(addr[:], crypto.Keccak256(pub[1:])[12:])
+	copy(addr[:], crypto.Keccak256(pub[1:])[12:]) // 공개 키의 끝 20바이트를 사용하여 주소를 생성합니다.
 	return addr, nil
 }
 
 // deriveChainId는 주어진 v 매개변수에서 체인 ID를 추출합니다.
 func deriveChainId(v *big.Int) *big.Int {
-	if v.BitLen() <= 64 {
+	if v.BitLen() <= 64 { // v가 64비트 이하인 경우
 		v := v.Uint64()
-		if v == 27 || v == 28 {
-			return new(big.Int)
+		if v == 27 || v == 28 { // 레거시 서명
+			return new(big.Int) // 체인 ID가 없음
 		}
-		return new(big.Int).SetUint64((v - 35) / 2)
+		return new(big.Int).SetUint64((v - 35) / 2) // EIP-155 이후 서명 ({0, 1}에 체인 ID * 2 + 35를 더해서 V를 구했으므로 역으로 계산)
 	}
 	v = new(big.Int).Sub(v, big.NewInt(35))
 	return v.Div(v, big.NewInt(2))
