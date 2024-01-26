@@ -28,52 +28,49 @@ import (
 )
 
 var (
-	// Common encoded values.
-	// These are useful when implementing EncodeRLP.
+	// 흔히 사용되는 인코딩된 값들입니다.
+	// EncodeRLP를 구현할 때 유용합니다.
 
-	// EmptyString is the encoding of an empty string.
+	// EmptyString은 빈 문자열의 인코딩입니다.
 	EmptyString = []byte{0x80}
-	// EmptyList is the encoding of an empty list.
+	// EmptyList는 빈 리스트의 인코딩입니다.
 	EmptyList = []byte{0xC0}
 )
 
 var ErrNegativeBigInt = errors.New("rlp: cannot encode negative big.Int")
 
-// Encoder is implemented by types that require custom
-// encoding rules or want to encode private fields.
+// Encoder는 사용자 정의 인코딩 규칙이 필요한 타입이나
+// private 필드를 인코딩하고 싶은 타입에 의해 구현됩니다.
 type Encoder interface {
-	// EncodeRLP should write the RLP encoding of its receiver to w.
-	// If the implementation is a pointer method, it may also be
-	// called for nil pointers.
+	// EncodeRLP는 리시버의 RLP 인코딩을 io.Writer에 씁니다.
+	// 포인터 메서드로 구현된 경우 nil 포인터에 대해서도 호출될 수 있습니다.
 	//
-	// Implementations should generate valid RLP. The data written is
-	// not verified at the moment, but a future version might. It is
-	// recommended to write only a single value but writing multiple
-	// values or no value at all is also permitted.
+	// 구현체는 유효한 RLP를 생성해야 합니다. io.Writer에 쓰인 데이터는
+	// 현시점에서 검증되지는 않지만, 향후 버전에서는 검증될 수 있습니다.
+	// 하나의 값만 쓰는 것을 권장하지만, 그렇지 않은 경우도 허용됩니다.
 	EncodeRLP(io.Writer) error
 }
 
-// Encode writes the RLP encoding of val to w. Note that Encode may
-// perform many small writes in some cases. Consider making w
-// buffered.
+// Encode는 val의 RLP 인코딩을 w에 씁니다. Encode는 경우에 따라
+// 많은 작은 쓰기 작업을 수행할 수 있습니다. w를 버퍼링하는 것을 고려하세요.
 //
-// Please see package-level documentation of encoding rules.
+// 인코딩 규칙에 대한 패키지 수준의 문서를 참조하세요.
 func Encode(w io.Writer, val interface{}) error {
-	// Optimization: reuse *encBuffer when called by EncodeRLP.
-	if buf := encBufferFromWriter(w); buf != nil {
+	// 최적화: EncodeRLP에 의해 호출될 때 *encBuffer를 재사용합니다.
+	if buf := encBufferFromWriter(w); buf != nil { // w가 *encBuffer를 구현하는 경우
 		return buf.encode(val)
 	}
 
-	buf := getEncBuffer()
-	defer encBufferPool.Put(buf)
-	if err := buf.encode(val); err != nil {
+	buf := getEncBuffer()                   // pool에서 *encBuffer를 가져옵니다.
+	defer encBufferPool.Put(buf)            // *encBuffer를 pool에 반환합니다.
+	if err := buf.encode(val); err != nil { // 인코딩을 수행합니다.
 		return err
 	}
-	return buf.writeTo(w)
+	return buf.writeTo(w) // 인코딩된 데이터를 w에 씁니다.
 }
 
-// EncodeToBytes returns the RLP encoding of val.
-// Please see package-level documentation for the encoding rules.
+// EncodeToBytes는 val의 RLP 인코딩을 반환합니다.
+// 인코딩 규칙에 대한 패키지 수준의 문서를 참조하세요.
 func EncodeToBytes(val interface{}) ([]byte, error) {
 	buf := getEncBuffer()
 	defer encBufferPool.Put(buf)
@@ -81,101 +78,101 @@ func EncodeToBytes(val interface{}) ([]byte, error) {
 	if err := buf.encode(val); err != nil {
 		return nil, err
 	}
-	return buf.makeBytes(), nil
+	return buf.makeBytes(), nil // 인코딩된 데이터를 반환합니다.
 }
 
-// EncodeToReader returns a reader from which the RLP encoding of val
-// can be read. The returned size is the total size of the encoded
-// data.
+// EncodeToReader는 val의 RLP 인코딩을 읽을 수 있는 리더를 반환합니다.
+// 반환된 size는 인코딩된 데이터의 총 크기입니다.
 //
-// Please see the documentation of Encode for the encoding rules.
+// 인코딩 규칙에 대한 Encode의 문서를 참조하세요.
 func EncodeToReader(val interface{}) (size int, r io.Reader, err error) {
 	buf := getEncBuffer()
 	if err := buf.encode(val); err != nil {
 		encBufferPool.Put(buf)
 		return 0, nil, err
 	}
-	// Note: can't put the reader back into the pool here
-	// because it is held by encReader. The reader puts it
-	// back when it has been fully consumed.
+	// 참고: 여기서 buf를 pool에 반환할 수 없습니다.
+	// 왜냐하면 encReader가 buf를 보유하고 있기 때문입니다.
+	// 리더가 완전히 소비되었을 때 리더가 buf를 반환합니다.
 	return buf.size(), &encReader{buf: buf}, nil
 }
 
 type listhead struct {
-	offset int // index of this header in string data
-	size   int // total size of encoded data (including list headers)
+	offset int // 문자열 데이터에서 이 헤더의 오프셋
+	size   int // 인코딩된 데이터의 총 크기(리스트 헤더 포함)
 }
 
-// encode writes head to the given buffer, which must be at least
-// 9 bytes long. It returns the encoded bytes.
+// encode는 주어진 버퍼에 head를 씁니다. 버퍼는 적어도 9바이트여야 합니다.
+// 인코딩된 바이트를 반환합니다.
 func (head *listhead) encode(buf []byte) []byte {
-	return buf[:puthead(buf, 0xC0, 0xF7, uint64(head.size))]
+	return buf[:puthead(buf, 0xC0, 0xF7, uint64(head.size))] // 리스트 헤더를 쓰고 헤더의 크기만큼 버퍼를 반환합니다.
 }
 
-// headsize returns the size of a list or string header
-// for a value of the given size.
+// headsize는 주어진 크기의 값에 대한 리스트나 문자열 헤더의 크기를 반환합니다.
 func headsize(size uint64) int {
 	if size < 56 {
 		return 1
 	}
-	return 1 + intsize(size)
+	return 1 + intsize(size) // 1 + size의 바이트 수
 }
 
-// puthead writes a list or string header to buf.
-// buf must be at least 9 bytes long.
+// puthead는 buf에 리스트나 문자열 헤더를 씁니다.
+// buf는 적어도 9바이트여야 합니다.
 func puthead(buf []byte, smalltag, largetag byte, size uint64) int {
 	if size < 56 {
 		buf[0] = smalltag + byte(size)
 		return 1
 	}
-	sizesize := putint(buf[1:], size)
+	sizesize := putint(buf[1:], size) // size를 1번 인덱스부터 씁니다.
 	buf[0] = largetag + byte(sizesize)
 	return sizesize + 1
 }
 
 var encoderInterface = reflect.TypeOf(new(Encoder)).Elem()
 
-// makeWriter creates a writer function for the given type.
+// makeWriter는 주어진 타입에 대한 writer 함수를 생성합니다.
 func makeWriter(typ reflect.Type, ts rlpstruct.Tags) (writer, error) {
 	kind := typ.Kind()
 	switch {
-	case typ == rawValueType:
+	// 특별한 타입들
+	case typ == rawValueType: // []byte의 별칭 타입 (rawValue)
 		return writeRawValue, nil
-	case typ.AssignableTo(reflect.PtrTo(bigInt)):
+	case typ.AssignableTo(reflect.PtrTo(bigInt)): // *big.Int
 		return writeBigIntPtr, nil
-	case typ.AssignableTo(bigInt):
+	case typ.AssignableTo(bigInt): // big.Int
 		return writeBigIntNoPtr, nil
-	case typ == reflect.PtrTo(u256Int):
+	case typ == reflect.PtrTo(u256Int): // *uint256.Int
 		return writeU256IntPtr, nil
-	case typ == u256Int:
+	case typ == u256Int: // uint256.Int
 		return writeU256IntNoPtr, nil
-	case kind == reflect.Ptr:
+	// 그 외의 타입들
+	case kind == reflect.Ptr: // 포인터 타입
 		return makePtrWriter(typ, ts)
-	case reflect.PtrTo(typ).Implements(encoderInterface):
+	case reflect.PtrTo(typ).Implements(encoderInterface): // Encoder 인터페이스를 구현하는 포인터 타입
 		return makeEncoderWriter(typ), nil
-	case isUint(kind):
+	case isUint(kind): // 부호 없는 정수 타입
 		return writeUint, nil
-	case kind == reflect.Bool:
+	case kind == reflect.Bool: // 부울 타입
 		return writeBool, nil
-	case kind == reflect.String:
+	case kind == reflect.String: // 문자열 타입
 		return writeString, nil
-	case kind == reflect.Slice && isByte(typ.Elem()):
+	case kind == reflect.Slice && isByte(typ.Elem()): // []byte 타입
 		return writeBytes, nil
-	case kind == reflect.Array && isByte(typ.Elem()):
+	case kind == reflect.Array && isByte(typ.Elem()): // [N]byte 타입 (배열)
 		return makeByteArrayWriter(typ), nil
-	case kind == reflect.Slice || kind == reflect.Array:
+	case kind == reflect.Slice || kind == reflect.Array: // byte 슬라이스나 배열이 아닌 슬라이스나 배열
 		return makeSliceWriter(typ, ts)
-	case kind == reflect.Struct:
+	case kind == reflect.Struct: // 구조체
 		return makeStructWriter(typ)
-	case kind == reflect.Interface:
+	case kind == reflect.Interface: // 인터페이스
 		return writeInterface, nil
 	default:
-		return nil, fmt.Errorf("rlp: type %v is not RLP-serializable", typ)
+		return nil, fmt.Errorf("rlp: type %v is not RLP-serializable", typ) // 그 외는 직렬화할 수 없는 타입
 	}
 }
 
 func writeRawValue(val reflect.Value, w *encBuffer) error {
-	w.str = append(w.str, val.Bytes()...)
+	w.str = append(w.str, val.Bytes()...) // rawValue는 헤더가 미리 계산되어 있습니다. 그대로 str에 이어붙입니다.
 	return nil
 }
 
@@ -192,10 +189,10 @@ func writeBool(val reflect.Value, w *encBuffer) error {
 func writeBigIntPtr(val reflect.Value, w *encBuffer) error {
 	ptr := val.Interface().(*big.Int)
 	if ptr == nil {
-		w.str = append(w.str, 0x80)
+		w.str = append(w.str, 0x80) // 빈 문자열 헤더를 씁니다.
 		return nil
 	}
-	if ptr.Sign() == -1 {
+	if ptr.Sign() == -1 { // 음수인 경우 에러를 반환합니다.
 		return ErrNegativeBigInt
 	}
 	w.writeBigInt(ptr)
@@ -204,7 +201,7 @@ func writeBigIntPtr(val reflect.Value, w *encBuffer) error {
 
 func writeBigIntNoPtr(val reflect.Value, w *encBuffer) error {
 	i := val.Interface().(big.Int)
-	if i.Sign() == -1 {
+	if i.Sign() == -1 { // 음수인 경우 에러를 반환합니다.
 		return ErrNegativeBigInt
 	}
 	w.writeBigInt(&i)
@@ -214,7 +211,7 @@ func writeBigIntNoPtr(val reflect.Value, w *encBuffer) error {
 func writeU256IntPtr(val reflect.Value, w *encBuffer) error {
 	ptr := val.Interface().(*uint256.Int)
 	if ptr == nil {
-		w.str = append(w.str, 0x80)
+		w.str = append(w.str, 0x80) // 빈 문자열 헤더를 씁니다.
 		return nil
 	}
 	w.writeUint256(ptr)
@@ -228,7 +225,7 @@ func writeU256IntNoPtr(val reflect.Value, w *encBuffer) error {
 }
 
 func writeBytes(val reflect.Value, w *encBuffer) error {
-	w.writeBytes(val.Bytes())
+	w.writeBytes(val.Bytes()) // 바이트 슬라이스를 그대로 씁니다.
 	return nil
 }
 
@@ -257,16 +254,16 @@ func makeByteArrayWriter(typ reflect.Type) writer {
 }
 
 func writeLengthZeroByteArray(val reflect.Value, w *encBuffer) error {
-	w.str = append(w.str, 0x80)
+	w.str = append(w.str, 0x80) // 빈 문자열 헤더를 씁니다.
 	return nil
 }
 
 func writeLengthOneByteArray(val reflect.Value, w *encBuffer) error {
 	b := byte(val.Index(0).Uint())
 	if b <= 0x7f {
-		w.str = append(w.str, b)
+		w.str = append(w.str, b) // 0x00 ~ 0x7f 사이의 값은 헤더가 필요 없습니다.
 	} else {
-		w.str = append(w.str, 0x81, b)
+		w.str = append(w.str, 0x81, b) // 0x80 이상의 값은 헤더가 필요합니다.
 	}
 	return nil
 }
@@ -274,20 +271,19 @@ func writeLengthOneByteArray(val reflect.Value, w *encBuffer) error {
 func writeString(val reflect.Value, w *encBuffer) error {
 	s := val.String()
 	if len(s) == 1 && s[0] <= 0x7f {
-		// fits single byte, no string header
+		// 0x00 ~ 0x7f 사이의 값은 헤더가 필요 없습니다.
 		w.str = append(w.str, s[0])
 	} else {
-		w.encodeStringHeader(len(s))
-		w.str = append(w.str, s...)
+		w.encodeStringHeader(len(s)) // 헤더를 씁니다.
+		w.str = append(w.str, s...)  // 문자열을 씁니다.
 	}
 	return nil
 }
 
 func writeInterface(val reflect.Value, w *encBuffer) error {
 	if val.IsNil() {
-		// Write empty list. This is consistent with the previous RLP
-		// encoder that we had and should therefore avoid any
-		// problems.
+		// 빈 리스트를 씁니다. 이는 이전 RLP 인코더와 일관성이 있으며
+		// 따라서 어떤 문제도 발생하지 않아야 합니다.
 		w.str = append(w.str, 0xC0)
 		return nil
 	}
@@ -307,8 +303,8 @@ func makeSliceWriter(typ reflect.Type, ts rlpstruct.Tags) (writer, error) {
 
 	var wfn writer
 	if ts.Tail {
-		// This is for struct tail slices.
-		// w.list is not called for them.
+		// 구조체의 tail 슬라이스에 대한 writer입니다.
+		// w.list는 호출되지 않습니다.
 		wfn = func(val reflect.Value, w *encBuffer) error {
 			vlen := val.Len()
 			for i := 0; i < vlen; i++ {
@@ -319,7 +315,7 @@ func makeSliceWriter(typ reflect.Type, ts rlpstruct.Tags) (writer, error) {
 			return nil
 		}
 	} else {
-		// This is for regular slices and arrays.
+		// 일반적인 슬라이스와 배열에 대한 writer입니다.
 		wfn = func(val reflect.Value, w *encBuffer) error {
 			vlen := val.Len()
 			if vlen == 0 {
@@ -353,7 +349,7 @@ func makeStructWriter(typ reflect.Type) (writer, error) {
 	var writer writer
 	firstOptionalField := firstOptionalField(fields)
 	if firstOptionalField == len(fields) {
-		// This is the writer function for structs without any optional fields.
+		// optional 필드가 없는 구조체에 대한 writer 함수입니다.
 		writer = func(val reflect.Value, w *encBuffer) error {
 			lh := w.list()
 			for _, f := range fields {
@@ -365,8 +361,8 @@ func makeStructWriter(typ reflect.Type) (writer, error) {
 			return nil
 		}
 	} else {
-		// If there are any "optional" fields, the writer needs to perform additional
-		// checks to determine the output list length.
+		// optional 필드가 있는 구조체에 대한 writer 함수입니다.
+		// optional 필드가 있는 경우, writer는 출력 리스트의 길이를 결정하기 위해 추가적인 검사를 수행해야 합니다.
 		writer = func(val reflect.Value, w *encBuffer) error {
 			lastField := len(fields) - 1
 			for ; lastField >= firstOptionalField; lastField-- {
@@ -416,9 +412,8 @@ func makeEncoderWriter(typ reflect.Type) writer {
 	}
 	w := func(val reflect.Value, w *encBuffer) error {
 		if !val.CanAddr() {
-			// package json simply doesn't call MarshalJSON for this case, but encodes the
-			// value as if it didn't implement the interface. We don't want to handle it that
-			// way.
+			// json 패키지는 이 경우에 MarshalJSON을 호출하지 않고 인터페이스를 구현하지 않은 것처럼
+			// 값 자체를 인코딩합니다. 우리는 이를 그렇게 처리하고 싶지 않습니다.
 			return fmt.Errorf("rlp: unaddressable value of type %v, EncodeRLP is pointer method", val.Type())
 		}
 		return val.Addr().Interface().(Encoder).EncodeRLP(w)
@@ -426,8 +421,8 @@ func makeEncoderWriter(typ reflect.Type) writer {
 	return w
 }
 
-// putint writes i to the beginning of b in big endian byte
-// order, using the least number of bytes needed to represent i.
+// putint는 i를 b의 시작 부분에 big endian 바이트 순서로 씁니다.
+// i를 표현하는 데 필요한 최소한의 바이트 수만 사용합니다.
 func putint(b []byte, i uint64) (size int) {
 	switch {
 	case i < (1 << 8):
@@ -485,7 +480,7 @@ func putint(b []byte, i uint64) (size int) {
 	}
 }
 
-// intsize computes the minimum number of bytes required to store i.
+// intsize는 i를 저장하는 데 필요한 최소한의 바이트 수를 계산합니다.
 func intsize(i uint64) (size int) {
 	for size = 1; ; size++ {
 		if i >>= 8; i == 0 {

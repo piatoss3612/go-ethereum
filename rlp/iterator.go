@@ -22,8 +22,8 @@ type listIterator struct {
 	err  error
 }
 
-// NewListIterator creates an iterator for the (list) represented by data
-// TODO: Consider removing this implementation, as it is no longer used.
+// NewListIterator는 data로 표시된 (list)에 대한 반복자를 생성합니다.
+// TODO: 더 이상 사용되지 않으므로 이 구현을 제거하는 것이 좋습니다.
 func NewListIterator(data RawValue) (*listIterator, error) {
 	k, t, c, err := readKind(data)
 	if err != nil {
@@ -38,7 +38,7 @@ func NewListIterator(data RawValue) (*listIterator, error) {
 	return it, nil
 }
 
-// Next forwards the iterator one step, returns true if it was not at end yet
+// Next는 반복자를 한 단계 전진시키고 아직 끝이 아니면 true를 반환합니다.
 func (it *listIterator) Next() bool {
 	if len(it.data) == 0 {
 		return false
@@ -50,7 +50,7 @@ func (it *listIterator) Next() bool {
 	return true
 }
 
-// Value returns the current value
+// Value는 현재 값을 반환합니다.
 func (it *listIterator) Value() []byte {
 	return it.next
 }
