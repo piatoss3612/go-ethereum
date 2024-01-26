@@ -21,7 +21,7 @@ package rlp
 
 import "reflect"
 
-// byteArrayBytes returns a slice of the byte array v.
+// byteArrayBytes는 바이트 배열 v의 슬라이스를 반환합니다.
 func byteArrayBytes(v reflect.Value, length int) []byte {
 	return v.Slice(0, length).Bytes()
 }

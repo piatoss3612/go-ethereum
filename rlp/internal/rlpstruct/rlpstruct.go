@@ -14,10 +14,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package rlpstruct implements struct processing for RLP encoding/decoding.
+// rlpstruct 패키지는 구조체 처리를 위한 RLP 인코딩/디코딩을 구현합니다.
 //
-// In particular, this package handles all rules around field filtering,
-// struct tags and nil value determination.
+// 특히, 이 패키지는 필드 필터링, 구조체 태그 그리고 nil 값 결정에 관한 모든 규칙을 처리합니다.
 package rlpstruct
 
 import (
@@ -26,7 +25,7 @@ import (
 	"strings"
 )
 
-// Field represents a struct field.
+// Field는 구조체 필드를 나타냅니다.
 type Field struct {
 	Name     string
 	Index    int
@@ -35,17 +34,16 @@ type Field struct {
 	Tag      string
 }
 
-// Type represents the attributes of a Go type.
+// Type는 Go 타입의 속성을 나타냅니다.
 type Type struct {
 	Name      string
 	Kind      reflect.Kind
-	IsEncoder bool  // whether type implements rlp.Encoder
-	IsDecoder bool  // whether type implements rlp.Decoder
-	Elem      *Type // non-nil for Kind values of Ptr, Slice, Array
+	IsEncoder bool  // 타입이 rlp.Encoder를 구현하는지 여부
+	IsDecoder bool  // 타입이 rlp.Decoder를 구현하는지 여부
+	Elem      *Type // Ptr, Slice, Array의 Kind 값에 대해서는 nil이 아니어야 합니다.
 }
 
-// DefaultNilValue determines whether a nil pointer to t encodes/decodes
-// as an empty string or empty list.
+// DefaultNilValue는 t의 nil 포인터가 빈 문자열 또는 빈 리스트로 인코딩/디코딩되는지 여부를 결정합니다.
 func (t Type) DefaultNilValue() NilKind {
 	k := t.Kind
 	if isUint(k) || k == reflect.String || k == reflect.Bool || isByteArray(t) {
@@ -54,34 +52,40 @@ func (t Type) DefaultNilValue() NilKind {
 	return NilKindList
 }
 
-// NilKind is the RLP value encoded in place of nil pointers.
+// NilKind는 nil 포인터 대신 인코딩되는 RLP 값입니다.
 type NilKind uint8
 
 const (
-	NilKindString NilKind = 0x80
-	NilKindList   NilKind = 0xC0
+	NilKindString NilKind = 0x80 // 빈 문자열
+	NilKindList   NilKind = 0xC0 // 빈 리스트
 )
 
-// Tags represents struct tags.
+// Tags는 구조체 태그를 나타냅니다.
 type Tags struct {
 	// rlp:"nil" controls whether empty input results in a nil pointer.
 	// nilKind is the kind of empty value allowed for the field.
+
+	// rlp:"nil"은 빈 입력이 nil 포인터로 결과를 내는지 여부를 결정합니다.
+	// nilKind는 필드에 허용되는 빈 값의 종류입니다.
 	NilKind NilKind
 	NilOK   bool
 
-	// rlp:"optional" allows for a field to be missing in the input list.
-	// If this is set, all subsequent fields must also be optional.
+	// rlp:"optional"은 입력 리스트에서 필드가 누락되는 것을 허용합니다.
+	// 이것이 설정되면, 이후의 모든 필드도 선택적이어야 합니다.
 	Optional bool
 
 	// rlp:"tail" controls whether this field swallows additional list elements. It can
 	// only be set for the last field, which must be of slice type.
+
+	// rlp:"tail"은 이 필드가 추가 리스트 요소를 허용하는지 여부를 결정합니다. 이것은
+	// 마지막 필드에만 설정할 수 있으며, 슬라이스 타입이어야 합니다.
 	Tail bool
 
-	// rlp:"-" ignores fields.
+	// rlp:"-"은 필드를 무시합니다.
 	Ignored bool
 }
 
-// TagError is raised for invalid struct tags.
+// TagError는 잘못된 구조체 태그에 대해 발생합니다.
 type TagError struct {
 	StructType string
 
@@ -99,12 +103,12 @@ func (e TagError) Error() string {
 	return fmt.Sprintf("rlp: invalid struct tag %q for %s (%s)", e.Tag, field, e.Err)
 }
 
-// ProcessFields filters the given struct fields, returning only fields
-// that should be considered for encoding/decoding.
+// ProcessFields는 주어진 구조체 필드를 필터링하여 인코딩/디코딩에 고려해야 하는
+// 필드만 반환합니다.
 func ProcessFields(allFields []Field) ([]Field, []Tags, error) {
 	lastPublic := lastPublicField(allFields)
 
-	// Gather all exported fields and their tags.
+	// 모든 공개된 필드와 태그를 수집합니다. (private 필드는 무시됩니다.)
 	var fields []Field
 	var tags []Tags
 	for _, field := range allFields {
@@ -122,9 +126,9 @@ func ProcessFields(allFields []Field) ([]Field, []Tags, error) {
 		tags = append(tags, ts)
 	}
 
-	// Verify optional field consistency. If any optional field exists,
-	// all fields after it must also be optional. Note: optional + tail
-	// is supported.
+	// 선택적 필드 일관성을 검증합니다. 선택적 필드가 하나라도 존재하면,
+	// 그 이후의 모든 필드도 선택적이어야 합니다. 참고: 선택적 + tail은
+	// 지원됩니다.
 	var anyOptional bool
 	var firstOptionalName string
 	for i, ts := range tags {

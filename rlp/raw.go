@@ -21,36 +21,35 @@ import (
 	"reflect"
 )
 
-// RawValue represents an encoded RLP value and can be used to delay
-// RLP decoding or to precompute an encoding. Note that the decoder does
-// not verify whether the content of RawValues is valid RLP.
+// RawValue는 인코딩된 RLP 값을 나타내며 RLP 디코딩을 지연하거나 인코딩을 사전에 계산하는 데 사용할 수 있습니다.
+// 디코더는 RawValues의 내용이 유효한 RLP인지 확인하지 않습니다.
 type RawValue []byte
 
 var rawValueType = reflect.TypeOf(RawValue{})
 
-// StringSize returns the encoded size of a string.
+// StringSize는 문자열의 인코딩된 크기를 반환합니다.
 func StringSize(s string) uint64 {
 	switch {
 	case len(s) == 0:
 		return 1
 	case len(s) == 1:
 		if s[0] <= 0x7f {
-			return 1
+			return 1 // 0x00 ~ 0x7f
 		} else {
-			return 2
+			return 2 // 0x80 ~ 0xff
 		}
 	default:
 		return uint64(headsize(uint64(len(s))) + len(s))
 	}
 }
 
-// BytesSize returns the encoded size of a byte slice.
+// BytesSize는 바이트 슬라이스의 인코딩된 크기를 반환합니다.
 func BytesSize(b []byte) uint64 {
 	switch {
 	case len(b) == 0:
 		return 1
 	case len(b) == 1:
-		if b[0] <= 0x7f {
+		if b[0] <= 0x7f { // 0x00 ~ 0x7f
 			return 1
 		} else {
 			return 2
@@ -60,14 +59,13 @@ func BytesSize(b []byte) uint64 {
 	}
 }
 
-// ListSize returns the encoded size of an RLP list with the given
-// content size.
+// ListSize는 주어진 contentSize를 가진 RLP 리스트의 인코딩된 크기를 반환합니다.
 func ListSize(contentSize uint64) uint64 {
 	return uint64(headsize(contentSize)) + contentSize
 }
 
-// IntSize returns the encoded size of the integer x. Note: The return type of this
-// function is 'int' for backwards-compatibility reasons. The result is always positive.
+// IntSize는 정수 x의 인코딩된 크기를 반환합니다. 참고: 이 함수의 반환 유형은
+// 이전 버전과의 호환성을 위해 'int'입니다. 결과는 항상 양수입니다.
 func IntSize(x uint64) int {
 	if x < 0x80 {
 		return 1
@@ -75,8 +73,7 @@ func IntSize(x uint64) int {
 	return 1 + intsize(x)
 }
 
-// Split returns the content of first RLP value and any
-// bytes after the value as subslices of b.
+// Split는 첫 번째 RLP 값의 내용과 해당 값 이후의 모든 바이트를 rest로 반환합니다.
 func Split(b []byte) (k Kind, content, rest []byte, err error) {
 	k, ts, cs, err := readKind(b)
 	if err != nil {
@@ -85,8 +82,8 @@ func Split(b []byte) (k Kind, content, rest []byte, err error) {
 	return k, b[ts : ts+cs], b[ts+cs:], nil
 }
 
-// SplitString splits b into the content of an RLP string
-// and any remaining bytes after the string.
+// SplitString은 b를 RLP 문자열의 내용과 문자열 이후의 모든 바이트로 분할합니다.
+// SplitString은 b가 RLP 문자열이 아닌 경우 오류를 반환합니다.
 func SplitString(b []byte) (content, rest []byte, err error) {
 	k, content, rest, err := Split(b)
 	if err != nil {
@@ -98,8 +95,8 @@ func SplitString(b []byte) (content, rest []byte, err error) {
 	return content, rest, nil
 }
 
-// SplitUint64 decodes an integer at the beginning of b.
-// It also returns the remaining data after the integer in 'rest'.
+// SplitUint64는 b의 시작 부분에 있는 정수를 디코딩합니다.
+// 또한 디코딩하고 남은 데이터를 'rest'에 반환합니다.
 func SplitUint64(b []byte) (x uint64, rest []byte, err error) {
 	content, rest, err := SplitString(b)
 	if err != nil {
@@ -124,8 +121,7 @@ func SplitUint64(b []byte) (x uint64, rest []byte, err error) {
 	}
 }
 
-// SplitList splits b into the content of a list and any remaining
-// bytes after the list.
+// SplitList는 b를 리스트의 내용과 그 외의 나머지 바이트로 분할합니다.
 func SplitList(b []byte) (content, rest []byte, err error) {
 	k, content, rest, err := Split(b)
 	if err != nil {
@@ -137,7 +133,7 @@ func SplitList(b []byte) (content, rest []byte, err error) {
 	return content, rest, nil
 }
 
-// CountValues counts the number of encoded values in b.
+// CountValues는 b에 인코딩된 값의 개수를 계산합니다.
 func CountValues(b []byte) (int, error) {
 	i := 0
 	for ; len(b) > 0; i++ {
@@ -156,27 +152,27 @@ func readKind(buf []byte) (k Kind, tagsize, contentsize uint64, err error) {
 	}
 	b := buf[0]
 	switch {
-	case b < 0x80:
+	case b < 0x80: // 단일 바이트 문자열
 		k = Byte
 		tagsize = 0
 		contentsize = 1
-	case b < 0xB8:
+	case b < 0xB8: // 길이가 55바이트 이하인 문자열
 		k = String
 		tagsize = 1
 		contentsize = uint64(b - 0x80)
-		// Reject strings that should've been single bytes.
+		// 단일 바이트여야 하는 문자열 거부
 		if contentsize == 1 && len(buf) > 1 && buf[1] < 128 {
 			return 0, 0, 0, ErrCanonSize
 		}
-	case b < 0xC0:
+	case b < 0xC0: // 길이가 55바이트를 초과하는 문자열
 		k = String
 		tagsize = uint64(b-0xB7) + 1
 		contentsize, err = readSize(buf[1:], b-0xB7)
-	case b < 0xF8:
+	case b < 0xF8: // 길이가 55바이트 이하인 리스트
 		k = List
 		tagsize = 1
 		contentsize = uint64(b - 0xC0)
-	default:
+	default: // 길이가 55바이트를 초과하는 리스트
 		k = List
 		tagsize = uint64(b-0xF7) + 1
 		contentsize, err = readSize(buf[1:], b-0xF7)
@@ -184,7 +180,7 @@ func readKind(buf []byte) (k Kind, tagsize, contentsize uint64, err error) {
 	if err != nil {
 		return 0, 0, 0, err
 	}
-	// Reject values larger than the input slice.
+	// 입력 슬라이스보다 큰 값 거부
 	if contentsize > uint64(len(buf))-tagsize {
 		return 0, 0, 0, ErrValueTooLarge
 	}
@@ -214,15 +210,14 @@ func readSize(b []byte, slen byte) (uint64, error) {
 	case 8:
 		s = uint64(b[0])<<56 | uint64(b[1])<<48 | uint64(b[2])<<40 | uint64(b[3])<<32 | uint64(b[4])<<24 | uint64(b[5])<<16 | uint64(b[6])<<8 | uint64(b[7])
 	}
-	// Reject sizes < 56 (shouldn't have separate size) and sizes with
-	// leading zero bytes.
+	// 56보다 작은 크기 거부(별도의 크기가 없어야 함) 및 선행 0바이트가 있는 크기 거부
 	if s < 56 || b[0] == 0 {
 		return 0, ErrCanonSize
 	}
 	return s, nil
 }
 
-// AppendUint64 appends the RLP encoding of i to b, and returns the resulting slice.
+// AppendUint64은 uint64 i의 RLP 인코딩을 b에 추가하고 결과 슬라이스를 반환합니다.
 func AppendUint64(b []byte, i uint64) []byte {
 	if i == 0 {
 		return append(b, 0x80)

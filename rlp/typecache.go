@@ -25,16 +25,15 @@ import (
 	"github.com/ethereum/go-ethereum/rlp/internal/rlpstruct"
 )
 
-// typeinfo is an entry in the type cache.
+// typeinfo는 타입 캐시의 항목입니다.
 type typeinfo struct {
 	decoder    decoder
-	decoderErr error // error from makeDecoder
+	decoderErr error // makeDecoder의 오류
 	writer     writer
-	writerErr  error // error from makeWriter
+	writerErr  error // makeWriter의 오류
 }
 
-// typekey is the key of a type in typeCache. It includes the struct tags because
-// they might generate a different decoder.
+// typekey는 typeCache의 타입 키입니다. 구조체 태그는 다른 디코더를 생성할 수 있기 때문에 포함됩니다.
 type typekey struct {
 	reflect.Type
 	rlpstruct.Tags
@@ -49,7 +48,7 @@ var theTC = newTypeCache()
 type typeCache struct {
 	cur atomic.Value
 
-	// This lock synchronizes writers.
+	// 이 뮤텍스는 쓰기를 동기화합니다.
 	mu   sync.Mutex
 	next map[typekey]*typeinfo
 }
@@ -76,7 +75,7 @@ func (c *typeCache) info(typ reflect.Type) *typeinfo {
 		return info
 	}
 
-	// Not in the cache, need to generate info for this type.
+	// 캐시되지 않은 경우, 이 타입에 대한 정보를 생성해야 합니다.
 	return c.generate(typ, rlpstruct.Tags{})
 }
 
@@ -89,7 +88,7 @@ func (c *typeCache) generate(typ reflect.Type, tags rlpstruct.Tags) *typeinfo {
 		return info
 	}
 
-	// Copy cur to next.
+	// cur을 next로 복사합니다.
 	c.next = make(map[typekey]*typeinfo, len(cur)+1)
 	for k, v := range cur {
 		c.next[k] = v
@@ -98,7 +97,7 @@ func (c *typeCache) generate(typ reflect.Type, tags rlpstruct.Tags) *typeinfo {
 	// Generate.
 	info := c.infoWhileGenerating(typ, tags)
 
-	// next -> cur
+	// next를 cur로 스왑합니다.
 	c.cur.Store(c.next)
 	c.next = nil
 	return info
@@ -109,9 +108,8 @@ func (c *typeCache) infoWhileGenerating(typ reflect.Type, tags rlpstruct.Tags) *
 	if info := c.next[key]; info != nil {
 		return info
 	}
-	// Put a dummy value into the cache before generating.
-	// If the generator tries to lookup itself, it will get
-	// the dummy value and won't call itself recursively.
+	// 생성하기 전에 캐시에 더미 값을 넣습니다.
+	// 생성기가 스스로를 참조하려고 하면 더미 값을 얻고 재귀적으로 스스로를 호출하지 않습니다.
 	info := new(typeinfo)
 	c.next[key] = info
 	info.generate(typ, tags)
@@ -124,9 +122,9 @@ type field struct {
 	optional bool
 }
 
-// structFields resolves the typeinfo of all public fields in a struct type.
+// structFields는 구조체 타입의 모든 공개 필드의 typeinfo를 분석합니다.
 func structFields(typ reflect.Type) (fields []field, err error) {
-	// Convert fields to rlpstruct.Field.
+	// 필드를 rlpstruct.Field로 변환합니다.
 	var allStructFields []rlpstruct.Field
 	for i := 0; i < typ.NumField(); i++ {
 		rf := typ.Field(i)
@@ -139,7 +137,7 @@ func structFields(typ reflect.Type) (fields []field, err error) {
 		})
 	}
 
-	// Filter/validate fields.
+	// 필터링하고 필드를 검증합니다.
 	structFields, structTags, err := rlpstruct.ProcessFields(allStructFields)
 	if err != nil {
 		if tagErr, ok := err.(rlpstruct.TagError); ok {
@@ -149,7 +147,7 @@ func structFields(typ reflect.Type) (fields []field, err error) {
 		return nil, err
 	}
 
-	// Resolve typeinfo.
+	// 필드의 typeinfo를 분석합니다.
 	for i, sf := range structFields {
 		typ := typ.Field(sf.Index).Type
 		tags := structTags[i]
@@ -159,7 +157,7 @@ func structFields(typ reflect.Type) (fields []field, err error) {
 	return fields, nil
 }
 
-// firstOptionalField returns the index of the first field with "optional" tag.
+// firstOptionalField는 "optional" 태그가 있는 첫 번째 필드의 인덱스를 반환합니다.
 func firstOptionalField(fields []field) int {
 	for i, f := range fields {
 		if f.optional {
@@ -184,7 +182,7 @@ func (i *typeinfo) generate(typ reflect.Type, tags rlpstruct.Tags) {
 	i.writer, i.writerErr = makeWriter(typ, tags)
 }
 
-// rtypeToStructType converts typ to rlpstruct.Type.
+// rtypeToStructType는 typ를 rlpstruct.Type로 변환합니다.
 func rtypeToStructType(typ reflect.Type, rec map[reflect.Type]*rlpstruct.Type) *rlpstruct.Type {
 	k := typ.Kind()
 	if k == reflect.Invalid {
@@ -211,7 +209,7 @@ func rtypeToStructType(typ reflect.Type, rec map[reflect.Type]*rlpstruct.Type) *
 	return t
 }
 
-// typeNilKind gives the RLP value kind for nil pointers to 'typ'.
+// typeNilKind는 'typ'의 nil 포인터에 대한 RLP 값 종류를 제공합니다.
 func typeNilKind(typ reflect.Type, tags rlpstruct.Tags) Kind {
 	styp := rtypeToStructType(typ, nil)
 
