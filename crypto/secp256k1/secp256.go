@@ -64,12 +64,11 @@ var (
 	ErrRecoverFailed       = errors.New("recovery failed")
 )
 
-// Sign creates a recoverable ECDSA signature.
-// The produced signature is in the 65-byte [R || S || V] format where V is 0 or 1.
+// Sign은 복구 가능한 ECDSA 서명을 생성합니다.
+// 생성된 서명은 V가 0 또는 1인 65바이트 [R || S || V] 형식입니다.
 //
-// The caller is responsible for ensuring that msg cannot be chosen
-// directly by an attacker. It is usually preferable to use a cryptographic
-// hash function on any input before handing it to this function.
+// 호출자는 msg가 공격자에 의해 직접 선택될 수 없음을 보장해야 합니다.
+// 일반적으로 이 함수에 전달하기 전에 입력에 대해 암호 해시 함수를 사용하는 것이 좋습니다.
 func Sign(msg []byte, seckey []byte) ([]byte, error) {
 	if len(msg) != 32 {
 		return nil, ErrInvalidMsgLen
@@ -97,14 +96,13 @@ func Sign(msg []byte, seckey []byte) ([]byte, error) {
 		recid   C.int
 	)
 	C.secp256k1_ecdsa_recoverable_signature_serialize_compact(context, sigdata, &recid, &sigstruct)
-	sig[64] = byte(recid) // add back recid to get 65 bytes sig
+	sig[64] = byte(recid) // recid를 다시 추가하여 65바이트 sig를 얻습니다.
 	return sig, nil
 }
 
-// RecoverPubkey returns the public key of the signer.
-// msg must be the 32-byte hash of the message to be signed.
-// sig must be a 65-byte compact ECDSA signature containing the
-// recovery id as the last element.
+// RecoverPubkey는 서명자의 공개 키를 반환합니다.
+// msg는 서명할 메시지의 32바이트 해시여야 합니다.
+// sig는 마지막 요소로 복구 ID를 포함하는 65바이트 압축 ECDSA 서명이어야 합니다.
 func RecoverPubkey(msg []byte, sig []byte) ([]byte, error) {
 	if len(msg) != 32 {
 		return nil, ErrInvalidMsgLen
@@ -126,6 +124,9 @@ func RecoverPubkey(msg []byte, sig []byte) ([]byte, error) {
 
 // VerifySignature checks that the given pubkey created signature over message.
 // The signature should be in [R || S] format.
+
+// VerifySignature는 주어진 공개 키가 메시지에 대한 서명을 생성했는지 확인합니다.
+// 서명은 [R || S] 형식이어야 합니다.
 func VerifySignature(pubkey, msg, signature []byte) bool {
 	if len(msg) != 32 || len(signature) != 64 || len(pubkey) == 0 {
 		return false
@@ -136,8 +137,8 @@ func VerifySignature(pubkey, msg, signature []byte) bool {
 	return C.secp256k1_ext_ecdsa_verify(context, sigdata, msgdata, keydata, C.size_t(len(pubkey))) != 0
 }
 
-// DecompressPubkey parses a public key in the 33-byte compressed format.
-// It returns non-nil coordinates if the public key is valid.
+// DecompressPubkey는 33바이트 압축 형식의 공개 키를 구문 분석합니다.
+// 공개 키가 유효하면 nil이 아닌 좌표를 반환합니다.
 func DecompressPubkey(pubkey []byte) (x, y *big.Int) {
 	if len(pubkey) != 33 {
 		return nil, nil
@@ -155,7 +156,7 @@ func DecompressPubkey(pubkey []byte) (x, y *big.Int) {
 	return new(big.Int).SetBytes(out[1:33]), new(big.Int).SetBytes(out[33:])
 }
 
-// CompressPubkey encodes a public key to 33-byte compressed format.
+// CompressPubkey는 공개 키를 33바이트 압축 형식으로 인코딩합니다.
 func CompressPubkey(x, y *big.Int) []byte {
 	var (
 		pubkey     = S256().Marshal(x, y)
