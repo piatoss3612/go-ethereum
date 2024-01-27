@@ -129,7 +129,7 @@ func ToECDSAUnsafe(d []byte) *ecdsa.PrivateKey {
 func toECDSA(d []byte, strict bool) (*ecdsa.PrivateKey, error) {
 	priv := new(ecdsa.PrivateKey)
 	priv.PublicKey.Curve = S256()
-	if strict && 8*len(d) != priv.Params().BitSize { // d의 비트 크기가 곡선의 필드 크기와 일치하는지 확인합니다.
+	if strict && 8*len(d) != priv.Params().BitSize { // d의 비트 크기가 곡선의 유한체의 크기와 일치하는지 확인합니다.
 		return nil, fmt.Errorf("invalid length, need %d bits", priv.Params().BitSize)
 	}
 	priv.D = new(big.Int).SetBytes(d)

@@ -22,17 +22,17 @@ extern int secp256k1_ext_scalar_mul(const secp256k1_context* ctx, const unsigned
 import "C"
 
 func (BitCurve *BitCurve) ScalarMult(Bx, By *big.Int, scalar []byte) (*big.Int, *big.Int) {
-	// Ensure scalar is exactly 32 bytes. We pad always, even if
-	// scalar is 32 bytes long, to avoid a timing side channel.
+	// scala는 정확이 32바이트여야 합니다. 스칼라가 32바이트인 경우에도
+	// 사이드 채널 공격을 피하기 위해 항상 패딩합니다.
 	if len(scalar) > 32 {
 		panic("can't handle scalars > 256 bits")
 	}
-	// NOTE: potential timing issue
+	// 참고: 잠재적인 타이밍 문제
 	padded := make([]byte, 32)
 	copy(padded[32-len(scalar):], scalar)
 	scalar = padded
 
-	// Do the multiplication in C, updating point.
+	// C에서 곱셈을 수행하고 point를 업데이트합니다.
 	point := make([]byte, 64)
 	readBits(Bx, point[:32])
 	readBits(By, point[32:])
@@ -41,7 +41,7 @@ func (BitCurve *BitCurve) ScalarMult(Bx, By *big.Int, scalar []byte) (*big.Int, 
 	scalarPtr := (*C.uchar)(unsafe.Pointer(&scalar[0]))
 	res := C.secp256k1_ext_scalar_mul(context, pointPtr, scalarPtr)
 
-	// Unpack the result and clear temporaries.
+	// 결과를 언패킹하고 임시 변수를 지웁니다.
 	x := new(big.Int).SetBytes(point[:32])
 	y := new(big.Int).SetBytes(point[32:])
 	for i := range point {

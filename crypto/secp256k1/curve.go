@@ -38,15 +38,15 @@ import (
 )
 
 const (
-	// number of bits in a big.Word
+	// big.Word의 비트 수
 	wordBits = 32 << (uint64(^big.Word(0)) >> 63)
-	// number of bytes in a big.Word
+	// big.Word의 바이트 수
 	wordBytes = wordBits / 8
 )
 
-// readBits encodes the absolute value of bigint as big-endian bytes. Callers
-// must ensure that buf has enough space. If buf is too short the result will
-// be incomplete.
+// readBits는 bigint의 절대값을 빅엔디언 바이트로 인코딩합니다.
+// 호출자는 buf에 충분한 공간이 있는지 확인해야 합니다.
+// buf가 너무 짧으면 결과가 불완전할 수 있습니다.
 func readBits(bigint *big.Int, buf []byte) {
 	i := len(buf)
 	for _, d := range bigint.Bits() {
@@ -71,12 +71,25 @@ func readBits(bigint *big.Int, buf []byte) {
 
 // A BitCurve represents a Koblitz Curve with a=0.
 // See http://www.hyperelliptic.org/EFD/g1p/auto-shortw.html
+
+// 이 코드는 https://github.com/ThePiachu/GoBit 에서 가져왔으며
+// 소수 유한체 상의 코블리츠 타원곡선을 구현합니다.
+//
+// 내부적으로 타원곡선의 메서드는 자코비안 좌표를 사용합니다.
+// 타원곡선의 (x, y) 위치에 대해 자코비안 좌표는 (x1, y1, z1)이며
+// x = x1/z1², y = y1/z1³입니다. 전체 계산이 변환 내에서 수행될 때
+// (ScalarMult 및 ScalarBaseMult 안에서와 같이) 가장 큰 속도 향상이 발생합니다.
+// 그러나 Add 및 Double의 경우 변환을 적용하고 반전하는 것이
+// 아핀 좌표에서 작동하는 것보다 더 빠릅니다.
+
+// BitCurve는 a=0인 코블리츠 타원곡선을 나타냅니다. (y²=x³+B)
+// http://www.hyperelliptic.org/EFD/g1p/auto-shortw.html 참조
 type BitCurve struct {
-	P       *big.Int // the order of the underlying field
-	N       *big.Int // the order of the base point
-	B       *big.Int // the constant of the BitCurve equation
-	Gx, Gy  *big.Int // (x,y) of the base point
-	BitSize int      // the size of the underlying field
+	P       *big.Int // 체의 위수
+	N       *big.Int // 생성점의 위수
+	B       *big.Int // BitCurve 방정식의 상수 (y²=x³+B)
+	Gx, Gy  *big.Int // 생성점의 (x,y)
+	BitSize int      // 유한체의 비트 수
 }
 
 func (BitCurve *BitCurve) Params() *elliptic.CurveParams {
@@ -90,7 +103,7 @@ func (BitCurve *BitCurve) Params() *elliptic.CurveParams {
 	}
 }
 
-// IsOnCurve returns true if the given (x,y) lies on the BitCurve.
+// IsOnCurve는 주어진 (x,y)가 BitCurve 위에 있는지 여부를 반환합니다.
 func (BitCurve *BitCurve) IsOnCurve(x, y *big.Int) bool {
 	// y² = x³ + b
 	y2 := new(big.Int).Mul(y, y) //y²
@@ -105,8 +118,7 @@ func (BitCurve *BitCurve) IsOnCurve(x, y *big.Int) bool {
 	return x3.Cmp(y2) == 0
 }
 
-// affineFromJacobian reverses the Jacobian transform. See the comment at the
-// top of the file.
+// affineFromJacobian는 자코비안 변환을 반전합니다. 파일 상단의 주석을 참조하십시오.
 func (BitCurve *BitCurve) affineFromJacobian(x, y, z *big.Int) (xOut, yOut *big.Int) {
 	if z.Sign() == 0 {
 		return new(big.Int), new(big.Int)
@@ -123,10 +135,10 @@ func (BitCurve *BitCurve) affineFromJacobian(x, y, z *big.Int) (xOut, yOut *big.
 	return
 }
 
-// Add returns the sum of (x1,y1) and (x2,y2)
+// Add는 (x1,y1)과 (x2,y2)의 합을 반환합니다.
 func (BitCurve *BitCurve) Add(x1, y1, x2, y2 *big.Int) (*big.Int, *big.Int) {
-	// If one point is at infinity, return the other point.
-	// Adding the point at infinity to any point will preserve the other point.
+	// 한 점이 무한원점에 있으면 다른 점을 반환합니다.
+	// 무한원점에 어떤 점을 더하면 다른 점이 반환됩니다.
 	if x1.Sign() == 0 && y1.Sign() == 0 {
 		return x2, y2
 	}
@@ -140,8 +152,8 @@ func (BitCurve *BitCurve) Add(x1, y1, x2, y2 *big.Int) (*big.Int, *big.Int) {
 	return BitCurve.affineFromJacobian(BitCurve.addJacobian(x1, y1, z, x2, y2, z))
 }
 
-// addJacobian takes two points in Jacobian coordinates, (x1, y1, z1) and
-// (x2, y2, z2) and returns their sum, also in Jacobian form.
+// addJacobian은 자코비안 좌표 (x1, y1, z1)와 (x2, y2, z2)의 두 점을
+// 더하고 그 결과를 자코비안 좌표로 반환합니다.
 func (BitCurve *BitCurve) addJacobian(x1, y1, z1, x2, y2, z2 *big.Int) (*big.Int, *big.Int, *big.Int) {
 	// See http://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#addition-add-2007-bl
 	z1z1 := new(big.Int).Mul(z1, z1)
@@ -205,14 +217,14 @@ func (BitCurve *BitCurve) addJacobian(x1, y1, z1, x2, y2, z2 *big.Int) (*big.Int
 	return x3, y3, z3
 }
 
-// Double returns 2*(x,y)
+// Double은 2*(x,y)를 반환합니다.
 func (BitCurve *BitCurve) Double(x1, y1 *big.Int) (*big.Int, *big.Int) {
 	z1 := new(big.Int).SetInt64(1)
 	return BitCurve.affineFromJacobian(BitCurve.doubleJacobian(x1, y1, z1))
 }
 
-// doubleJacobian takes a point in Jacobian coordinates, (x, y, z), and
-// returns its double, also in Jacobian form.
+// doubleJacobian는 자코비안 좌표 (x, y, z)의 점을 가져와
+// 그 점의 두 배를 자코비안 형태로 반환합니다.
 func (BitCurve *BitCurve) doubleJacobian(x, y, z *big.Int) (*big.Int, *big.Int, *big.Int) {
 	// See http://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-dbl-2009-l
 
@@ -245,31 +257,30 @@ func (BitCurve *BitCurve) doubleJacobian(x, y, z *big.Int) (*big.Int, *big.Int, 
 	return x3, y3, z3
 }
 
-// ScalarBaseMult returns k*G, where G is the base point of the group and k is
-// an integer in big-endian form.
+// ScalarBaseMult는 G가 그룹의 생성점이고 k가 빅엔디언 형태의 정수인 경우
+// k*G를 반환합니다.
 func (BitCurve *BitCurve) ScalarBaseMult(k []byte) (*big.Int, *big.Int) {
 	return BitCurve.ScalarMult(BitCurve.Gx, BitCurve.Gy, k)
 }
 
-// Marshal converts a point into the form specified in section 4.3.6 of ANSI
-// X9.62.
+// Marshal은 ANSI X9.62 섹션 4.3.6에서 지정된 형식으로 점을 변환합니다.
 func (BitCurve *BitCurve) Marshal(x, y *big.Int) []byte {
 	byteLen := (BitCurve.BitSize + 7) >> 3
 	ret := make([]byte, 1+2*byteLen)
-	ret[0] = 4 // uncompressed point flag
+	ret[0] = 4 // 비압축 점 플래그
 	readBits(x, ret[1:1+byteLen])
 	readBits(y, ret[1+byteLen:])
 	return ret
 }
 
-// Unmarshal converts a point, serialised by Marshal, into an x, y pair. On
-// error, x = nil.
+// Unmarshal은 Marshal에 의해 직렬화된 점을 x, y 쌍으로 변환합니다.
+// 오류가 발생하면 x = nil입니다.
 func (BitCurve *BitCurve) Unmarshal(data []byte) (x, y *big.Int) {
 	byteLen := (BitCurve.BitSize + 7) >> 3
 	if len(data) != 1+2*byteLen {
 		return
 	}
-	if data[0] != 4 { // uncompressed form
+	if data[0] != 4 { // 비압축 형식이 아닌 경우
 		return
 	}
 	x = new(big.Int).SetBytes(data[1 : 1+byteLen])
@@ -283,15 +294,15 @@ func init() {
 	// See SEC 2 section 2.7.1
 	// curve parameters taken from:
 	// http://www.secg.org/sec2-v2.pdf
-	theCurve.P, _ = new(big.Int).SetString("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F", 0)
-	theCurve.N, _ = new(big.Int).SetString("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 0)
-	theCurve.B, _ = new(big.Int).SetString("0x0000000000000000000000000000000000000000000000000000000000000007", 0)
-	theCurve.Gx, _ = new(big.Int).SetString("0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798", 0)
-	theCurve.Gy, _ = new(big.Int).SetString("0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8", 0)
-	theCurve.BitSize = 256
+	theCurve.P, _ = new(big.Int).SetString("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F", 0)  // 유한체의 위수
+	theCurve.N, _ = new(big.Int).SetString("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 0)  // 생성점의 위수
+	theCurve.B, _ = new(big.Int).SetString("0x0000000000000000000000000000000000000000000000000000000000000007", 0)  // BitCurve 방정식의 상수 7 (y²=x³+7)
+	theCurve.Gx, _ = new(big.Int).SetString("0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798", 0) // 생성점의 x좌표
+	theCurve.Gy, _ = new(big.Int).SetString("0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8", 0) // 생성점의 y좌표
+	theCurve.BitSize = 256                                                                                           // 유한체의 비트 수
 }
 
-// S256 returns a BitCurve which implements secp256k1.
+// S256은 secp256k1을 구현하는 BitCurve를 반환합니다.
 func S256() *BitCurve {
 	return theCurve
 }
