@@ -2,11 +2,9 @@
 
 ## Table of Contents
 
-- [Go Ethereum Breakdown](#go-ethereum-breakdown)
-  - [Table of Contents](#table-of-contents)
-  - [Prerequisite](#prerequisite)
-  - [Introduction](#introduction)
-  - [mdBook](#mdBook)
+- [Prerequisite](#prerequisite)
+- [Introduction](#introduction)
+- [mdBook](#mdBook)
 
 ## Prerequisite
 
