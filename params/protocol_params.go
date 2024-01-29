@@ -22,6 +22,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// TODO: vm 패키지 보면서 같이 보기
+
 const (
 	GasLimitBoundDivisor uint64 = 1024               // The bound divisor of the gas limit, used in update calculations.
 	MinGasLimit          uint64 = 5000               // Minimum the gas limit may ever be.

@@ -23,7 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// Genesis hashes to enforce below configs on.
+// 제네시스 해시에 따라 구성 정보를 강제합니다.
 var (
 	MainnetGenesisHash = common.HexToHash("0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3")
 	HoleskyGenesisHash = common.HexToHash("0xb5f7f912443c940f21fd611f12828d75b534364ed9e95ca4e307729a4661bde4")
@@ -36,7 +36,7 @@ func newUint64(val uint64) *uint64 { return &val }
 var (
 	MainnetTerminalTotalDifficulty, _ = new(big.Int).SetString("58_750_000_000_000_000_000_000", 0)
 
-	// MainnetChainConfig is the chain parameters to run a node on the main network.
+	// MainnetChainConfig는 메인 네트워크에서 노드를 실행하는 데 사용되는 체인 매개 변수입니다.
 	MainnetChainConfig = &ChainConfig{
 		ChainID:                       big.NewInt(1),
 		HomesteadBlock:                big.NewInt(1_150_000),
@@ -59,7 +59,8 @@ var (
 		ShanghaiTime:                  newUint64(1681338455),
 		Ethash:                        new(EthashConfig),
 	}
-	// HoleskyChainConfig contains the chain parameters to run a node on the Holesky test network.
+
+	// HoleskyChainConfig는 Holesky 테스트 네트워크에서 노드를 실행하는 데 사용되는 체인 매개 변수입니다.
 	HoleskyChainConfig = &ChainConfig{
 		ChainID:                       big.NewInt(17000),
 		HomesteadBlock:                big.NewInt(0),
@@ -83,7 +84,8 @@ var (
 		ShanghaiTime:                  newUint64(1696000704),
 		Ethash:                        new(EthashConfig),
 	}
-	// SepoliaChainConfig contains the chain parameters to run a node on the Sepolia test network.
+
+	// SepoliaChainConfig는 Sepolia 테스트 네트워크에서 노드를 실행하는 데 사용되는 체인 매개 변수입니다.
 	SepoliaChainConfig = &ChainConfig{
 		ChainID:                       big.NewInt(11155111),
 		HomesteadBlock:                big.NewInt(0),
@@ -107,7 +109,8 @@ var (
 		ShanghaiTime:                  newUint64(1677557088),
 		Ethash:                        new(EthashConfig),
 	}
-	// GoerliChainConfig contains the chain parameters to run a node on the Görli test network.
+
+	// GoerliChainConfig는 Görli 테스트 네트워크에서 노드를 실행하는 데 사용되는 체인 매개 변수입니다.
 	GoerliChainConfig = &ChainConfig{
 		ChainID:                       big.NewInt(5),
 		HomesteadBlock:                big.NewInt(0),
@@ -133,8 +136,8 @@ var (
 			Epoch:  30000,
 		},
 	}
-	// AllEthashProtocolChanges contains every protocol change (EIPs) introduced
-	// and accepted by the Ethereum core developers into the Ethash consensus.
+
+	// AllEthashProtocolChanges는 Ethereum 코어 개발자가 Ethash 합의에 도입하고 수락한 모든 프로토콜 변경 사항(EIP)을 포함합니다.
 	AllEthashProtocolChanges = &ChainConfig{
 		ChainID:                       big.NewInt(1337),
 		HomesteadBlock:                big.NewInt(0),
@@ -183,8 +186,7 @@ var (
 		TerminalTotalDifficultyPassed: true,
 	}
 
-	// AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
-	// and accepted by the Ethereum core developers into the Clique consensus.
+	// AllCliqueProtocolChanges는 Ethereum 코어 개발자가 Clique 합의에 도입하고 수락한 모든 프로토콜 변경 사항(EIP)을 포함합니다.
 	AllCliqueProtocolChanges = &ChainConfig{
 		ChainID:                       big.NewInt(1337),
 		HomesteadBlock:                big.NewInt(0),
@@ -213,8 +215,7 @@ var (
 		Clique:                        &CliqueConfig{Period: 0, Epoch: 30000},
 	}
 
-	// TestChainConfig contains every protocol change (EIPs) introduced
-	// and accepted by the Ethereum core developers for testing purposes.
+	// TestChainConfig는 Ethereum 코어 개발자가 테스트 목적으로 도입하고 수락한 모든 프로토콜 변경 사항(EIP)을 포함합니다.
 	TestChainConfig = &ChainConfig{
 		ChainID:                       big.NewInt(1),
 		HomesteadBlock:                big.NewInt(0),
@@ -243,8 +244,7 @@ var (
 		Clique:                        nil,
 	}
 
-	// NonActivatedConfig defines the chain configuration without activating
-	// any protocol change (EIPs).
+	// NonActivatedConfig는 프로토콜 변경 사항(EIP)을 활성화하지 않고 체인 구성을 정의합니다.
 	NonActivatedConfig = &ChainConfig{
 		ChainID:                       big.NewInt(1),
 		HomesteadBlock:                nil,
@@ -275,7 +275,7 @@ var (
 	TestRules = TestChainConfig.Rules(new(big.Int), false, 0)
 )
 
-// NetworkNames are user friendly names to use in the chain spec banner.
+// NetworkNames는 체인 사양 배너에서 사용할 사용자 친화적인 이름입니다.
 var NetworkNames = map[string]string{
 	MainnetChainConfig.ChainID.String(): "mainnet",
 	GoerliChainConfig.ChainID.String():  "goerli",
@@ -283,80 +283,77 @@ var NetworkNames = map[string]string{
 	HoleskyChainConfig.ChainID.String(): "holesky",
 }
 
-// ChainConfig is the core config which determines the blockchain settings.
+// ChainConfig는 블록 체인 설정을 결정하는 핵심 구성입니다.
 //
-// ChainConfig is stored in the database on a per block basis. This means
-// that any network, identified by its genesis block, can have its own
-// set of configuration options.
+// ChainConfig는 블록에 따라 데이터베이스에 저장됩니다. 이는
+// 제네시스 블록으로 식별되는 모든 네트워크는 자체 설정을 가질 수 있음을 의미합니다.
 type ChainConfig struct {
-	ChainID *big.Int `json:"chainId"` // chainId identifies the current chain and is used for replay protection
+	ChainID *big.Int `json:"chainId"` // chainId는 현재 체인을 식별하고 재생 방지를 위해 사용됩니다.
 
-	HomesteadBlock *big.Int `json:"homesteadBlock,omitempty"` // Homestead switch block (nil = no fork, 0 = already homestead)
+	HomesteadBlock *big.Int `json:"homesteadBlock,omitempty"` // Homestead 전환 블록 (nil = 포크 없음, 0 = 이미 홈스테드)
 
-	DAOForkBlock   *big.Int `json:"daoForkBlock,omitempty"`   // TheDAO hard-fork switch block (nil = no fork)
-	DAOForkSupport bool     `json:"daoForkSupport,omitempty"` // Whether the nodes supports or opposes the DAO hard-fork
+	DAOForkBlock   *big.Int `json:"daoForkBlock,omitempty"`   // TheDAO 하드 포크 전환 블록 (nil = 포크 없음)
+	DAOForkSupport bool     `json:"daoForkSupport,omitempty"` // 노드가 DAO 하드 포크를 지원하거나 반대하는지 여부
 
 	// EIP150 implements the Gas price changes (https://github.com/ethereum/EIPs/issues/150)
-	EIP150Block *big.Int `json:"eip150Block,omitempty"` // EIP150 HF block (nil = no fork)
-	EIP155Block *big.Int `json:"eip155Block,omitempty"` // EIP155 HF block
-	EIP158Block *big.Int `json:"eip158Block,omitempty"` // EIP158 HF block
+	EIP150Block *big.Int `json:"eip150Block,omitempty"` // EIP150 HF 블록 (nil = 포크 없음)
+	EIP155Block *big.Int `json:"eip155Block,omitempty"` // EIP155 HF 블록
+	EIP158Block *big.Int `json:"eip158Block,omitempty"` // EIP158 HF 블록
 
-	ByzantiumBlock      *big.Int `json:"byzantiumBlock,omitempty"`      // Byzantium switch block (nil = no fork, 0 = already on byzantium)
-	ConstantinopleBlock *big.Int `json:"constantinopleBlock,omitempty"` // Constantinople switch block (nil = no fork, 0 = already activated)
-	PetersburgBlock     *big.Int `json:"petersburgBlock,omitempty"`     // Petersburg switch block (nil = same as Constantinople)
-	IstanbulBlock       *big.Int `json:"istanbulBlock,omitempty"`       // Istanbul switch block (nil = no fork, 0 = already on istanbul)
-	MuirGlacierBlock    *big.Int `json:"muirGlacierBlock,omitempty"`    // Eip-2384 (bomb delay) switch block (nil = no fork, 0 = already activated)
-	BerlinBlock         *big.Int `json:"berlinBlock,omitempty"`         // Berlin switch block (nil = no fork, 0 = already on berlin)
-	LondonBlock         *big.Int `json:"londonBlock,omitempty"`         // London switch block (nil = no fork, 0 = already on london)
-	ArrowGlacierBlock   *big.Int `json:"arrowGlacierBlock,omitempty"`   // Eip-4345 (bomb delay) switch block (nil = no fork, 0 = already activated)
-	GrayGlacierBlock    *big.Int `json:"grayGlacierBlock,omitempty"`    // Eip-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)
-	MergeNetsplitBlock  *big.Int `json:"mergeNetsplitBlock,omitempty"`  // Virtual fork after The Merge to use as a network splitter
+	ByzantiumBlock      *big.Int `json:"byzantiumBlock,omitempty"`      // Byzantium 전환 블록 (nil = 포크 없음, 0 = 이미 byzantium)
+	ConstantinopleBlock *big.Int `json:"constantinopleBlock,omitempty"` // Constantinople 전환 블록 (nil = 포크 없음, 0 = 이미 constantinople)
+	PetersburgBlock     *big.Int `json:"petersburgBlock,omitempty"`     // Petersburg 전환 블록 (nil = constantinople과 동일)
+	IstanbulBlock       *big.Int `json:"istanbulBlock,omitempty"`       // Istanbul 전환 블록 (nil = 포크 없음, 0 = 이미 istanbul)
+	MuirGlacierBlock    *big.Int `json:"muirGlacierBlock,omitempty"`    // Eip-2384 (난이도 폭탄 지연) 스위치 블록 (nil = 포크 없음, 0 = 이미 활성화됨)
+	BerlinBlock         *big.Int `json:"berlinBlock,omitempty"`         // Berlin 스위치 블록 (nil = 포크 없음, 0 = 이미 berlin)
+	LondonBlock         *big.Int `json:"londonBlock,omitempty"`         // London 스위치 블록 (nil = 포크 없음, 0 = 이미 london)
+	ArrowGlacierBlock   *big.Int `json:"arrowGlacierBlock,omitempty"`   // Eip-4345 (난이도 폭탄 지연) 스위치 블록 (nil = 포크 없음, 0 = 이미 활성화됨)
+	GrayGlacierBlock    *big.Int `json:"grayGlacierBlock,omitempty"`    // Eip-5133 (난이도 폭탄 지연) 스위치 블록 (nil = 포크 없음, 0 = 이미 활성화됨)
+	MergeNetsplitBlock  *big.Int `json:"mergeNetsplitBlock,omitempty"`  // The Merge 이후의 가상 포크를 네트워크 분할기로 사용
 
-	// Fork scheduling was switched from blocks to timestamps here
+	// 포크 스케줄링은 블록에서 타임 스탬프로 전환되었습니다.
 
-	ShanghaiTime *uint64 `json:"shanghaiTime,omitempty"` // Shanghai switch time (nil = no fork, 0 = already on shanghai)
-	CancunTime   *uint64 `json:"cancunTime,omitempty"`   // Cancun switch time (nil = no fork, 0 = already on cancun)
-	PragueTime   *uint64 `json:"pragueTime,omitempty"`   // Prague switch time (nil = no fork, 0 = already on prague)
-	VerkleTime   *uint64 `json:"verkleTime,omitempty"`   // Verkle switch time (nil = no fork, 0 = already on verkle)
+	ShanghaiTime *uint64 `json:"shanghaiTime,omitempty"` // Shanghai 스위치 시간 (nil = 포크 없음, 0 = 이미 shanghai)
+	CancunTime   *uint64 `json:"cancunTime,omitempty"`   // Cancun 스위치 시간 (nil = 포크 없음, 0 = 이미 cancun)
+	PragueTime   *uint64 `json:"pragueTime,omitempty"`   // Prague 스위치 시간 (nil = 포크 없음, 0 = 이미 prague)
+	VerkleTime   *uint64 `json:"verkleTime,omitempty"`   // Verkle 스위치 시간 (nil = 포크 없음, 0 = 이미 verkle)
 
-	// TerminalTotalDifficulty is the amount of total difficulty reached by
-	// the network that triggers the consensus upgrade.
+	// TerminalTotalDifficulty는 컨센서스 업그레이드를 트리거하는 네트워크가 도달한 총 난이도량입니다.
 	TerminalTotalDifficulty *big.Int `json:"terminalTotalDifficulty,omitempty"`
 
-	// TerminalTotalDifficultyPassed is a flag specifying that the network already
-	// passed the terminal total difficulty. Its purpose is to disable legacy sync
-	// even without having seen the TTD locally (safer long term).
+	// TerminalTotalDifficultyPassed는 네트워크가 이미 터미널 총 난이도를 통과했음을 지정하는 플래그입니다.
+	// 그 목적은 TTD를 로컬로 보지 않고도 레거시 동기화를 비활성화하는 것입니다(장기적으로 안전함).
 	TerminalTotalDifficultyPassed bool `json:"terminalTotalDifficultyPassed,omitempty"`
 
-	// Various consensus engines
+	// 다양한 컨센서스 엔진
 	Ethash *EthashConfig `json:"ethash,omitempty"`
 	Clique *CliqueConfig `json:"clique,omitempty"`
 }
 
-// EthashConfig is the consensus engine configs for proof-of-work based sealing.
+// EthashConfig는 작업 증명(proof-of-work) 기반 합의 엔진에 대한 구성입니다.
 type EthashConfig struct{}
 
-// String implements the stringer interface, returning the consensus engine details.
+// String은 stringer 인터페이스를 구현하여 합의 엔진 세부 정보를 반환합니다.
 func (c *EthashConfig) String() string {
 	return "ethash"
 }
 
-// CliqueConfig is the consensus engine configs for proof-of-authority based sealing.
+// CliqueConfig는 권한 기반(proof-of-authority) 합의 엔진에 대한 구성입니다.
 type CliqueConfig struct {
-	Period uint64 `json:"period"` // Number of seconds between blocks to enforce
-	Epoch  uint64 `json:"epoch"`  // Epoch length to reset votes and checkpoint
+	Period uint64 `json:"period"` // 블록 간 초 단위 시간 간격을 강제합니다.
+	Epoch  uint64 `json:"epoch"`  // 투표 및 체크포인트를 재설정할 에포크 길이
 }
 
-// String implements the stringer interface, returning the consensus engine details.
+// String은 stringer 인터페이스를 구현하여 합의 엔진 세부 정보를 반환합니다.
 func (c *CliqueConfig) String() string {
 	return "clique"
 }
 
-// Description returns a human-readable description of ChainConfig.
+// Description는 ChainConfig의 사람이 읽을 수 있는 설명을 반환합니다.
 func (c *ChainConfig) Description() string {
 	var banner string
 
-	// Create some basic network config output
+	// 기본 네트워크 구성 출력 생성
 	network := NetworkNames[c.ChainID.String()]
 	if network == "" {
 		network = "unknown"
@@ -384,9 +381,8 @@ func (c *ChainConfig) Description() string {
 	}
 	banner += "\n"
 
-	// Create a list of forks with a short description of them. Forks that only
-	// makes sense for mainnet should be optional at printing to avoid bloating
-	// the output for testnets and private networks.
+	// 포크에 대한 설명을 포함하는 리스트를 만듭니다. 메인넷에서만 의미가 있는 포크는
+	// 출력을 부풀리지 않기 위해 선택적으로 출력되어야 합니다.
 	banner += "Pre-Merge hard forks (block based):\n"
 	banner += fmt.Sprintf(" - Homestead:                   #%-8v (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/homestead.md)\n", c.HomesteadBlock)
 	if c.DAOForkBlock != nil {
@@ -412,7 +408,7 @@ func (c *ChainConfig) Description() string {
 	}
 	banner += "\n"
 
-	// Add a special section for the merge as it's non-obvious
+	// 더 머지 포크가 활성화되지 않은 경우에만 표시합니다.
 	if c.TerminalTotalDifficulty == nil {
 		banner += "The Merge is not yet available for this network!\n"
 		banner += " - Hard-fork specification: https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/paris.md\n"
@@ -427,7 +423,7 @@ func (c *ChainConfig) Description() string {
 	}
 	banner += "\n"
 
-	// Create a list of forks post-merge
+	// 더 머지 이후의 포크에 대한 리스트를 만듭니다.
 	banner += "Post-Merge hard forks (timestamp based):\n"
 	if c.ShanghaiTime != nil {
 		banner += fmt.Sprintf(" - Shanghai:                    @%-10v (https://github.com/ethereum/execution-specs/blob/master/network-upgrades/mainnet-upgrades/shanghai.md)\n", *c.ShanghaiTime)
@@ -444,79 +440,78 @@ func (c *ChainConfig) Description() string {
 	return banner
 }
 
-// IsHomestead returns whether num is either equal to the homestead block or greater.
+// IsHomestead는 num이 홈스테드 블록과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsHomestead(num *big.Int) bool {
 	return isBlockForked(c.HomesteadBlock, num)
 }
 
-// IsDAOFork returns whether num is either equal to the DAO fork block or greater.
+// IsDAOFork는 num이 DAO 포크 블록과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsDAOFork(num *big.Int) bool {
 	return isBlockForked(c.DAOForkBlock, num)
 }
 
-// IsEIP150 returns whether num is either equal to the EIP150 fork block or greater.
+// IsEIP150는 num이 EIP150 포크 블록과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsEIP150(num *big.Int) bool {
 	return isBlockForked(c.EIP150Block, num)
 }
 
-// IsEIP155 returns whether num is either equal to the EIP155 fork block or greater.
+// IsEIP155는 num이 EIP155 포크 블록과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsEIP155(num *big.Int) bool {
 	return isBlockForked(c.EIP155Block, num)
 }
 
-// IsEIP158 returns whether num is either equal to the EIP158 fork block or greater.
+// IsEIP158는 num이 EIP158 포크 블록과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsEIP158(num *big.Int) bool {
 	return isBlockForked(c.EIP158Block, num)
 }
 
-// IsByzantium returns whether num is either equal to the Byzantium fork block or greater.
+// IsByzantium는 num이 비잔티움 포크 블록과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsByzantium(num *big.Int) bool {
 	return isBlockForked(c.ByzantiumBlock, num)
 }
 
-// IsConstantinople returns whether num is either equal to the Constantinople fork block or greater.
+// IsConstantinople는 num이 콘스탄티노플 포크 블록과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsConstantinople(num *big.Int) bool {
 	return isBlockForked(c.ConstantinopleBlock, num)
 }
 
-// IsMuirGlacier returns whether num is either equal to the Muir Glacier (EIP-2384) fork block or greater.
+// IsMuirGlacier는 num이 뮤어 글레이셔(EIP-2384) 포크 블록과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsMuirGlacier(num *big.Int) bool {
 	return isBlockForked(c.MuirGlacierBlock, num)
 }
 
-// IsPetersburg returns whether num is either
-// - equal to or greater than the PetersburgBlock fork block,
-// - OR is nil, and Constantinople is active
+// IsPetersburg는 num이 페테르부르크 포크 블록과 같거나 큰지 여부를 반환합니다.
+// nil인 경우 콘스탄티노플이 활성화됩니다.
 func (c *ChainConfig) IsPetersburg(num *big.Int) bool {
 	return isBlockForked(c.PetersburgBlock, num) || c.PetersburgBlock == nil && isBlockForked(c.ConstantinopleBlock, num)
 }
 
-// IsIstanbul returns whether num is either equal to the Istanbul fork block or greater.
+// IsIstanbul는 num이 이스탄불 포크 블록과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsIstanbul(num *big.Int) bool {
 	return isBlockForked(c.IstanbulBlock, num)
 }
 
-// IsBerlin returns whether num is either equal to the Berlin fork block or greater.
+// IsBerlin는 num이 베를린 포크 블록과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsBerlin(num *big.Int) bool {
 	return isBlockForked(c.BerlinBlock, num)
 }
 
-// IsLondon returns whether num is either equal to the London fork block or greater.
+// IsLondon는 num이 런던 포크 블록과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsLondon(num *big.Int) bool {
 	return isBlockForked(c.LondonBlock, num)
 }
 
-// IsArrowGlacier returns whether num is either equal to the Arrow Glacier (EIP-4345) fork block or greater.
+// IsArrowGlacier는 num이 Arrow Glacier(EIP-4345) 포크 블록과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsArrowGlacier(num *big.Int) bool {
 	return isBlockForked(c.ArrowGlacierBlock, num)
 }
 
-// IsGrayGlacier returns whether num is either equal to the Gray Glacier (EIP-5133) fork block or greater.
+// IsGrayGlacier는 num이 Gray Glacier(EIP-5133) 포크 블록과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsGrayGlacier(num *big.Int) bool {
 	return isBlockForked(c.GrayGlacierBlock, num)
 }
 
-// IsTerminalPoWBlock returns whether the given block is the last block of PoW stage.
+// IsTerminalPoWBlock는 주어진 블록이 PoW 단계의 마지막 블록인지 여부를 반환합니다. (이전 블록의 난이도보다 높거나 같아야 함)
 func (c *ChainConfig) IsTerminalPoWBlock(parentTotalDiff *big.Int, totalDiff *big.Int) bool {
 	if c.TerminalTotalDifficulty == nil {
 		return false
@@ -524,34 +519,33 @@ func (c *ChainConfig) IsTerminalPoWBlock(parentTotalDiff *big.Int, totalDiff *bi
 	return parentTotalDiff.Cmp(c.TerminalTotalDifficulty) < 0 && totalDiff.Cmp(c.TerminalTotalDifficulty) >= 0
 }
 
-// IsShanghai returns whether time is either equal to the Shanghai fork time or greater.
+// IsShanghai는 time이 Shanghai 포크 시간과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsShanghai(num *big.Int, time uint64) bool {
 	return c.IsLondon(num) && isTimestampForked(c.ShanghaiTime, time)
 }
 
-// IsCancun returns whether num is either equal to the Cancun fork time or greater.
+// IsCancun는 time이 Cancun 포크 시간과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsCancun(num *big.Int, time uint64) bool {
 	return c.IsLondon(num) && isTimestampForked(c.CancunTime, time)
 }
 
-// IsPrague returns whether num is either equal to the Prague fork time or greater.
+// IsPrague는 time이 Prague 포크 시간과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsPrague(num *big.Int, time uint64) bool {
 	return c.IsLondon(num) && isTimestampForked(c.PragueTime, time)
 }
 
-// IsVerkle returns whether num is either equal to the Verkle fork time or greater.
+// IsVerkle는 num이 Verkle 포크 시간과 같거나 큰지 여부를 반환합니다.
 func (c *ChainConfig) IsVerkle(num *big.Int, time uint64) bool {
 	return c.IsLondon(num) && isTimestampForked(c.VerkleTime, time)
 }
 
-// CheckCompatible checks whether scheduled fork transitions have been imported
-// with a mismatching chain configuration.
+// CheckCompatible는 예약된 포크 전환을 가져올 때 호환되지 않는 체인 구성이 있는지 확인합니다.
 func (c *ChainConfig) CheckCompatible(newcfg *ChainConfig, height uint64, time uint64) *ConfigCompatError {
 	var (
 		bhead = new(big.Int).SetUint64(height)
 		btime = time
 	)
-	// Iterate checkCompatible to find the lowest conflict.
+	// CheckCompatible를 반복하여 가장 낮은 충돌을 찾습니다.
 	var lasterr *ConfigCompatError
 	for {
 		err := c.checkCompatible(newcfg, bhead, btime)
@@ -569,14 +563,14 @@ func (c *ChainConfig) CheckCompatible(newcfg *ChainConfig, height uint64, time u
 	return lasterr
 }
 
-// CheckConfigForkOrder checks that we don't "skip" any forks, geth isn't pluggable enough
-// to guarantee that forks can be implemented in a different order than on official networks
+// CheckConfigForkOrder는 포크를 건너뛰지 않도록 체인 구성이 정의되었는지 확인합니다.
+// geth는 공식 네트워크에서와 다른 순서로 포크를 구현할 수 있을만큼 충분히 플러그인되지 않습니다.
 func (c *ChainConfig) CheckConfigForkOrder() error {
 	type fork struct {
 		name      string
-		block     *big.Int // forks up to - and including the merge - were defined with block numbers
-		timestamp *uint64  // forks after the merge are scheduled using timestamps
-		optional  bool     // if true, the fork may be nil and next fork is still allowed
+		block     *big.Int // 더 머지까지의 포크는 블록 번호로 식별되었습니다.
+		timestamp *uint64  // 더 머지 이후의 포크는 타임 스탬프를 사용하여 예약되었습니다.
+		optional  bool     // true인 경우 포크가 nil일 수 있으며 다음 포크가 허용됩니다.
 	}
 	var lastFork fork
 	for _, cur := range []fork{
@@ -708,25 +702,24 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, headNumber *big.Int, 
 	return nil
 }
 
-// BaseFeeChangeDenominator bounds the amount the base fee can change between blocks.
+// BaseFeeChangeDenominator는 블록 간 기본 수수료가 변경될 수 있는 양을 제한합니다.
 func (c *ChainConfig) BaseFeeChangeDenominator() uint64 {
 	return DefaultBaseFeeChangeDenominator
 }
 
-// ElasticityMultiplier bounds the maximum gas limit an EIP-1559 block may have.
+// ElasticityMultiplier는 EIP-1559 블록이 가질 수 있는 최대 가스 한도를 제한합니다.
 func (c *ChainConfig) ElasticityMultiplier() uint64 {
 	return DefaultElasticityMultiplier
 }
 
-// isForkBlockIncompatible returns true if a fork scheduled at block s1 cannot be
-// rescheduled to block s2 because head is already past the fork.
+// isForkBlockIncompatible는 블록 s1에서 예약된 포크가 블록 s2로 다시 예약될 수 없는지 여부를 반환합니다.
+// 왜냐하면 head가 이미 포크를 지나쳤기 때문입니다.
 func isForkBlockIncompatible(s1, s2, head *big.Int) bool {
 	return (isBlockForked(s1, head) || isBlockForked(s2, head)) && !configBlockEqual(s1, s2)
 }
 
-// isBlockForked returns whether a fork scheduled at block s is active at the
-// given head block. Whilst this method is the same as isTimestampForked, they
-// are explicitly separate for clearer reading.
+// isBlockForked는 블록 s에서 예약된 포크가 주어진 head 블록에서 활성화되었는지 여부를 반환합니다.
+// 이 메서드는 isTimestampForked와 동일하지만 더 명확하게 읽기 위해 명시적으로 분리되어 있습니다.
 func isBlockForked(s, head *big.Int) bool {
 	if s == nil || head == nil {
 		return false
@@ -744,15 +737,14 @@ func configBlockEqual(x, y *big.Int) bool {
 	return x.Cmp(y) == 0
 }
 
-// isForkTimestampIncompatible returns true if a fork scheduled at timestamp s1
-// cannot be rescheduled to timestamp s2 because head is already past the fork.
+// isForkTimestampIncompatible는 타임스탬프 s1에서 예약된 포크가 타임스탬프 s2로 다시 예약될 수 없는지 여부를 반환합니다.
+// 왜냐하면 head가 이미 포크를 지나쳤기 때문입니다.
 func isForkTimestampIncompatible(s1, s2 *uint64, head uint64) bool {
 	return (isTimestampForked(s1, head) || isTimestampForked(s2, head)) && !configTimestampEqual(s1, s2)
 }
 
-// isTimestampForked returns whether a fork scheduled at timestamp s is active
-// at the given head timestamp. Whilst this method is the same as isBlockForked,
-// they are explicitly separate for clearer reading.
+// isTimestampForked는 타임스탬프 s에서 예약된 포크가 주어진 head 타임스탬프에서 활성화되었는지 여부를 반환합니다.
+// 이 메서드는 isBlockForked와 동일하지만 더 명확하게 읽기 위해 명시적으로 분리되어 있습니다.
 func isTimestampForked(s *uint64, head uint64) bool {
 	if s == nil {
 		return false
@@ -770,21 +762,20 @@ func configTimestampEqual(x, y *uint64) bool {
 	return *x == *y
 }
 
-// ConfigCompatError is raised if the locally-stored blockchain is initialised with a
-// ChainConfig that would alter the past.
+// ConfigCompatError는 로컬로 저장된 블록체인이 과거로 회귀될 수 있는 ChainConfig로 초기화된 경우 발생합니다.
 type ConfigCompatError struct {
 	What string
 
-	// block numbers of the stored and new configurations if block based forking
+	// 블록 기반 포크인 경우 저장된 구성과 새 구성의 블록 번호
 	StoredBlock, NewBlock *big.Int
 
-	// timestamps of the stored and new configurations if time based forking
+	// 시간 기반 포크인 경우 저장된 구성과 새 구성의 타임스탬프
 	StoredTime, NewTime *uint64
 
-	// the block number to which the local chain must be rewound to correct the error
+	// 오류를 수정하기 위해 로컬 체인을 되감아야 하는 블록 번호
 	RewindToBlock uint64
 
-	// the timestamp to which the local chain must be rewound to correct the error
+	// 오류를 수정하기 위해 로컬 체인을 되감아야 하는 타임스탬프
 	RewindToTime uint64
 }
 
@@ -839,11 +830,9 @@ func (err *ConfigCompatError) Error() string {
 	return fmt.Sprintf("mismatching %s in database (have timestamp %d, want timestamp %d, rewindto timestamp %d)", err.What, err.StoredTime, err.NewTime, err.RewindToTime)
 }
 
-// Rules wraps ChainConfig and is merely syntactic sugar or can be used for functions
-// that do not have or require information about the block.
+// Rules는 ChainConfig를 래핑하며 단순히 문법적 설탕이거나 블록에 대한 정보가 없거나 필요하지 않은 함수에 사용할 수 있습니다.
 //
-// Rules is a one time interface meaning that it shouldn't be used in between transition
-// phases.
+// Rules는 일회성 인터페이스이므로 전환 단계 사이에 사용해서는 안 됩니다.
 type Rules struct {
 	ChainID                                                 *big.Int
 	IsHomestead, IsEIP150, IsEIP155, IsEIP158               bool
@@ -853,7 +842,7 @@ type Rules struct {
 	IsVerkle                                                bool
 }
 
-// Rules ensures c's ChainID is not nil.
+// Rules는 c의 ChainID가 nil이 아님을 보장합니다.
 func (c *ChainConfig) Rules(num *big.Int, isMerge bool, timestamp uint64) Rules {
 	chainID := c.ChainID
 	if chainID == nil {

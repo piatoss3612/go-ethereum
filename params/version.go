@@ -27,12 +27,12 @@ const (
 	VersionMeta  = "stable" // Version metadata to append to the version string
 )
 
-// Version holds the textual version string.
+// Version은 텍스트 형식의 버전 문자열을 반환합니다.
 var Version = func() string {
 	return fmt.Sprintf("%d.%d.%d", VersionMajor, VersionMinor, VersionPatch)
 }()
 
-// VersionWithMeta holds the textual version string including the metadata.
+// VersionWithMeta는 메타데이터를 포함한 텍스트 형식의 버전 문자열을 반환합니다.
 var VersionWithMeta = func() string {
 	v := Version
 	if VersionMeta != "" {
@@ -41,9 +41,8 @@ var VersionWithMeta = func() string {
 	return v
 }()
 
-// ArchiveVersion holds the textual version string used for Geth archives. e.g.
-// "1.8.11-dea1ce05" for stable releases, or "1.8.13-unstable-21c059b6" for unstable
-// releases.
+// ArchiveVersion는 Geth 아카이브에 사용되는 텍스트 형식의 버전 문자열을 보유합니다. 예:
+// 안정적인 릴리스의 경우 "1.8.11-dea1ce05" 또는 불안정한 경우 "1.8.13-unstable-21c059b6"입니다.
 func ArchiveVersion(gitCommit string) string {
 	vsn := Version
 	if VersionMeta != "stable" {

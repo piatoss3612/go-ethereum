@@ -16,8 +16,8 @@
 
 package params
 
-// These are the multipliers for ether denominations.
-// Example: To get the wei value of an amount in 'gwei', use
+// 이더 단위의 곱셈을 위한 상수들
+// 예: 'gwei' 단위의 양에 대한 wei 값을 얻으려면
 //
 //	new(big.Int).Mul(value, big.NewInt(params.GWei))
 const (
