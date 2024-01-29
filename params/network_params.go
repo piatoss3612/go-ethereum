@@ -16,52 +16,61 @@
 
 package params
 
-// These are network parameters that need to be constant between clients, but
-// aren't necessarily consensus related.
+// 이 값들은 클라이언트들 사이에서 일관되어야 하는 네트워크 파라미터들이지만,
+// 반드시 컨센서스와 관련된 것들은 아니다.
 
 const (
-	// BloomBitsBlocks is the number of blocks a single bloom bit section vector
-	// contains on the server side.
+	// BloomBitsBlocks는 서버 측에서 단일 블룸 비트 섹션 벡터가 포함하는 블록 수이다.
 	BloomBitsBlocks uint64 = 4096
 
-	// BloomBitsBlocksClient is the number of blocks a single bloom bit section vector
-	// contains on the light client side
+	// BloomBitsBlocksClient는 라이트 클라이언트 측에서 단일 블룸 비트 섹션 벡터가 포함하는 블록 수이다.
 	BloomBitsBlocksClient uint64 = 32768
 
 	// BloomConfirms is the number of confirmation blocks before a bloom section is
 	// considered probably final and its rotated bits are calculated.
+
+	// BloomConfirms는 블룸 섹션이 최종 상태로 간주되고 회전된 비트가 계산되기 전의 확인 블록 수이다. (?) - TODO: 이해 안됨
 	BloomConfirms = 256
 
-	// CHTFrequency is the block frequency for creating CHTs
+	// CHTFrequency는 CHT를 생성하는 블록 프리퀀시이다.
 	CHTFrequency = 32768
 
-	// BloomTrieFrequency is the block frequency for creating BloomTrie on both
-	// server/client sides.
+	// BloomTrieFrequency는 서버/클라이언트 양쪽에서 BloomTrie를 생성하는 블록 프리퀀시이다.
 	BloomTrieFrequency = 32768
 
 	// HelperTrieConfirmations is the number of confirmations before a client is expected
 	// to have the given HelperTrie available.
+
+	// HelperTrieConfirmations는 클라이언트가 주어진 HelperTrie를 사용할 수 있게 되는 확인 블록 수이다. (?)
 	HelperTrieConfirmations = 2048
 
 	// HelperTrieProcessConfirmations is the number of confirmations before a HelperTrie
 	// is generated
+
+	// HelperTrieProcessConfirmations는 HelperTrie가 생성되기 전의 확인 블록 수이다. (?)
 	HelperTrieProcessConfirmations = 256
 
-	// CheckpointFrequency is the block frequency for creating checkpoint
+	// CheckpointFrequency는 체크포인트를 생성하는 블록 프리퀀시이다.
 	CheckpointFrequency = 32768
 
-	// CheckpointProcessConfirmations is the number before a checkpoint is generated
+	// CheckpointProcessConfirmations는 체크포인트가 생성되기 전의 확인 블록 수이다. (?)
 	CheckpointProcessConfirmations = 256
 
 	// FullImmutabilityThreshold is the number of blocks after which a chain segment is
 	// considered immutable (i.e. soft finality). It is used by the downloader as a
 	// hard limit against deep ancestors, by the blockchain against deep reorgs, by
 	// the freezer as the cutoff threshold and by clique as the snapshot trust limit.
+
+	// FullImmutabilityThreshold는 체인 세그먼트가 불변(soft finality)으로 간주되는 블록 수이다. (i.e. soft finality)
+	// ??
 	FullImmutabilityThreshold = 90000
 
 	// LightImmutabilityThreshold is the number of blocks after which a header chain
 	// segment is considered immutable for light client(i.e. soft finality). It is used by
 	// the downloader as a hard limit against deep ancestors, by the blockchain against deep
 	// reorgs, by the light pruner as the pruning validity guarantee.
+
+	// LightImmutabilityThreshold는 헤더 체인 세그먼트가 라이트 클라이언트에 대해 불변(soft finality)으로 간주되는 블록 수이다.
+	// ??
 	LightImmutabilityThreshold = 30000
 )

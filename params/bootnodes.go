@@ -18,8 +18,7 @@ package params
 
 import "github.com/ethereum/go-ethereum/common"
 
-// MainnetBootnodes are the enode URLs of the P2P bootstrap nodes running on
-// the main Ethereum network.
+// MainnetBootnodes는 메인 이더리움 네트워크에서 실행되는 P2P 부트스트랩 노드의 enode URL입니다.
 var MainnetBootnodes = []string{
 	// Ethereum Foundation Go Bootnodes
 	"enode://d860a01f9722d78051619d1e2351aba3f43f943f6f00718d1b9baa4101932a1f5011f16bb2b1bb35db20d6fe28fa0bf09636d26a87d31de9ec6203eeedb1f666@18.138.108.67:30303", // bootnode-aws-ap-southeast-1-001
@@ -28,16 +27,14 @@ var MainnetBootnodes = []string{
 	"enode://4aeb4ab6c14b23e2c4cfdce879c04b0748a20d8e9b59e25ded2a08143e265c6c25936e74cbc8e641e3312ca288673d91f2f93f8e277de3cfa444ecdaaf982052@157.90.35.166:30303", // bootnode-hetzner-fsn
 }
 
-// HoleskyBootnodes are the enode URLs of the P2P bootstrap nodes running on the
-// Holesky test network.
+// HoleskyBootnodes는 Holesky 테스트 네트워크에서 실행되는 P2P 부트스트랩 노드의 enode URL입니다.
 var HoleskyBootnodes = []string{
 	// EF DevOps
 	"enode://ac906289e4b7f12df423d654c5a962b6ebe5b3a74cc9e06292a85221f9a64a6f1cfdd6b714ed6dacef51578f92b34c60ee91e9ede9c7f8fadc4d347326d95e2b@146.190.13.128:30303",
 	"enode://a3435a0155a3e837c02f5e7f5662a2f1fbc25b48e4dc232016e1c51b544cb5b4510ef633ea3278c0e970fa8ad8141e2d4d0f9f95456c537ff05fdf9b31c15072@178.128.136.233:30303",
 }
 
-// SepoliaBootnodes are the enode URLs of the P2P bootstrap nodes running on the
-// Sepolia test network.
+// SepoliaBootnodes는 Sepolia 테스트 네트워크에서 실행되는 P2P 부트스트랩 노드의 enode URL입니다.
 var SepoliaBootnodes = []string{
 	// EF DevOps
 	"enode://4e5e92199ee224a01932a377160aa432f31d0b351f84ab413a8e0a42f4f36476f8fb1cbe914af0d9aef0d51665c214cf653c651c4bbd9d5550a934f241f1682b@138.197.51.181:30303", // sepolia-bootnode-1-nyc3
@@ -47,8 +44,7 @@ var SepoliaBootnodes = []string{
 	"enode://9e9492e2e8836114cc75f5b929784f4f46c324ad01daf87d956f98b3b6c5fcba95524d6e5cf9861dc96a2c8a171ea7105bb554a197455058de185fa870970c7c@138.68.123.152:30303", // sepolia-bootnode-1-ams3
 }
 
-// GoerliBootnodes are the enode URLs of the P2P bootstrap nodes running on the
-// Görli test network.
+// GoerliBootnodes는 Görli 테스트 네트워크에서 실행되는 P2P 부트스트랩 노드의 enode URL입니다.
 var GoerliBootnodes = []string{
 	// Upstream bootnodes
 	"enode://011f758e6552d105183b1761c5e2dea0111bc20fd5f6422bc7f91e0fabbec9a6595caf6239b37feb773dddd3f87240d99d859431891e4a642cf2a0a9e6cbb98a@51.141.78.53:30303",
@@ -89,9 +85,8 @@ var V5Bootnodes = []string{
 
 const dnsPrefix = "enrtree://AKA3AM6LPBYEUDMVNU3BSVQJ5AD45Y7YPOHJLEF6W26QOE4VTUDPE@"
 
-// KnownDNSNetwork returns the address of a public DNS-based node list for the given
-// genesis hash and protocol. See https://github.com/ethereum/discv4-dns-lists for more
-// information.
+// KnownDNSNetwork는 주어진 genesis 해시 및 프로토콜에 대한 공개 DNS 기반 노드 목록의 주소를 반환합니다.
+// 자세한 내용은 https://github.com/ethereum/discv4-dns-lists를 참조하십시오.
 func KnownDNSNetwork(genesis common.Hash, protocol string) string {
 	var net string
 	switch genesis {
